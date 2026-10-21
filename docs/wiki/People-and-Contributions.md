@@ -7,6 +7,7 @@
 | Identity recorded by GitHub | Recorded activity | What can be credited | What cannot be inferred |
 | --- | --- | --- | --- |
 | [QuinnRana](https://github.com/QuinnRana) | Repository owner; author account for all three development commits; author of issues #1–#15 and PR #16; actor on issue updates and closures | Recorded code/documentation authorship, issue planning, PR proposal, and the specific events below | Real name, sole physical authorship, complete team roster, or personal ownership of every suggested role |
+| [DavidE2525](https://github.com/DavidE2525) | Author account of this wiki's [PR #17](https://github.com/QuinnRana/operation-secure-login/pull/17), created October 21, 2026 at 21:02:32 UTC | Requested documentation published through this account with Codex assistance; nine wiki pages and contribution/history research | Does not establish authorship of earlier application commits or a formal assignment to all documentation tasks |
 | GitHub / `web-flow` | Committer of the initial commit | Platform commit operation for the initial commit; QuinnRana remains its recorded author | A separate student contributor |
 | `github-project-automation[bot]` | Adds issues to a project and changes project item status | Automated project-board maintenance | Human implementation, testing, or review |
 

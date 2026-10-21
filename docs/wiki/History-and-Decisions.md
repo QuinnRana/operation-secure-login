@@ -24,6 +24,10 @@ All times below are **UTC** as returned by GitHub. Reasons are paraphrases of so
 
 Sources: [commits](https://github.com/QuinnRana/operation-secure-login/commits/codex/development), [issue #1](https://github.com/QuinnRana/operation-secure-login/issues/1), [roadmap](https://github.com/QuinnRana/operation-secure-login/issues/15), [PR #16](https://github.com/QuinnRana/operation-secure-login/pull/16), and the event records in the [archive](Issue-and-Activity-Archive.md).
 
+## Wiki creation after the inspected baseline
+
+On October 21, 2026 at 21:02:32 UTC, **DavidE2525** opened [draft PR #17](https://github.com/QuinnRana/operation-secure-login/pull/17) into codex/development. It adds this nine-page wiki at the collaborator's request, using Codex assistance. The purpose is to make the implementation, contribution attribution, decisions, and evidence reproducible in one linked reference. This is new documentation activity, separate from the pre-wiki source archive and from PR #16.
+
 ## Decision register
 
 | Decision / proposal | Documented reason | Source | State at snapshot |
