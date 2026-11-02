@@ -8,9 +8,9 @@ CIS 3353 Build–Attack–Defend capstone lab.
 - Secure login using prepared SQL statements
 - PBKDF2-SHA-256 password hashing
 - Generic authentication errors
-- Isolated SQL-injection Attack Lab with fictional records only
+- Local SQL-injection Attack Lab with its own database and fictional records only
 - Visible unsafe query and repeatable classroom test payload
-- Hosted owner-only site for controlled testing across devices
+- Hosted secure-login site; Attack Lab disabled without a dedicated lab binding
 
 ## Demo accounts
 
@@ -42,3 +42,7 @@ This application is for an authorized classroom lab and contains only fictional 
 ## Project wiki
 
 See the [project Wiki](https://github.com/QuinnRana/operation-secure-login/wiki) for architecture, setup, contribution history, the roadmap, and verification notes originally contributed by DavidE2525.
+
+## Database isolation
+
+See [database isolation](docs/DATABASE-ISOLATION.md) for local behavior, regression checks, and deployment requirements.

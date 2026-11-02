@@ -10,8 +10,8 @@ export type AttackState = {
   query?: string;
 };
 
-async function prepareLab() {
-  await env.DB.prepare(`
+async function prepareLab(labDb: D1Database) {
+  await labDb.prepare(`
     CREATE TABLE IF NOT EXISTS lab_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL,
@@ -22,12 +22,12 @@ async function prepareLab() {
     )
   `).run();
 
-  const existing = await env.DB.prepare('SELECT id FROM lab_accounts LIMIT 1').first();
+  const existing = await labDb.prepare('SELECT id FROM lab_accounts LIMIT 1').first();
   if (!existing) {
-    await env.DB.batch([
-      env.DB.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('alex', 'falcon7', 'Alex Morgan', 'Finance Intern', 'Training record: invoice review due Friday.'),
-      env.DB.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('jamie', 'spring22', 'Jamie Lee', 'Help Desk', 'Training record: temporary badge 1042.'),
-      env.DB.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('casey', 'welcome1', 'Casey Rivera', 'Operations', 'Training record: vendor meeting moved to 3 PM.'),
+    await labDb.batch([
+      labDb.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('alex', 'falcon7', 'Alex Morgan', 'Finance Intern', 'Training record: invoice review due Friday.'),
+      labDb.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('jamie', 'spring22', 'Jamie Lee', 'Help Desk', 'Training record: temporary badge 1042.'),
+      labDb.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('casey', 'welcome1', 'Casey Rivera', 'Operations', 'Training record: vendor meeting moved to 3 PM.'),
     ]);
   }
 }
@@ -40,14 +40,20 @@ export async function vulnerableLogin(
   const password = String(formData.get('password') ?? '');
   if (!username || !password) return { status: 'error', message: 'Enter both fields.', records: [] };
 
-  await prepareLab();
+  // Never fall back to the secure login database, including for seed writes.
+  const labDb = env.LAB_DB;
+  if (!labDb || labDb === env.DB) {
+    return { status: 'error', message: 'The isolated Attack Lab database is unavailable.', records: [] };
+  }
+
+  await prepareLab(labDb);
 
   // Intentionally vulnerable for this isolated classroom exercise.
   // The Defend phase replaces this string-built query with bound parameters.
   const query = `SELECT display_name, role, private_note FROM lab_accounts WHERE username = '${username}' AND password = '${password}'`;
 
   try {
-    const result = await env.DB.prepare(query).all<{
+    const result = await labDb.prepare(query).all<{
       display_name: string;
       role: string;
       private_note: string;
