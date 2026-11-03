@@ -32,12 +32,17 @@ async function prepareLab() {
   }
 }
 
+function formText(formData: FormData, name: string) {
+  const value = formData.get(name);
+  return typeof value === 'string' ? value : '';
+}
+
 export async function vulnerableLogin(
   _previousState: AttackState,
   formData: FormData,
 ): Promise<AttackState> {
-  const username = String(formData.get('username') ?? '');
-  const password = String(formData.get('password') ?? '');
+  const username = formText(formData, 'username');
+  const password = formText(formData, 'password');
   if (!username || !password) return { status: 'error', message: 'Enter both fields.', records: [] };
 
   await prepareLab();
