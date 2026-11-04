@@ -71,3 +71,28 @@ Capture successful login, generic rejection, the local baseline query/results, t
 - **Login/build/check failure:** retain the failing command and exact commit, stop the affected segment, and use the verified backup. Do not disable checks or lower password-hashing work to force a successful demonstration.
 
 Before calling task #13 done, the whole team must finish the timed rehearsal, resolve rubric gaps, reproduce the defended retest, and obtain approval of the backup format. Task #14 submission remains separate.
+
+## Reproducible machine evidence
+
+The [November 4 evidence record](evidence/rehearsal-2026-11-04.json) contains 14 passing assertions against the pinned release. It records expected and actual server-action results, including the intentionally unsafe query and fictional records. It also verifies that disposing and restarting the local Workers runtime preserves a fictional secure-database marker and both login paths. This is not a full browser/offline-startup recording or a lab-only reset test.
+
+From this documentation branch, after preparing a clean pinned-release checkout and installing its locked dependencies as above:
+
+```sh
+node scripts/rehearsal-evidence.mjs /absolute/path/to/operation-secure-login-rehearsal > rehearsal-evidence.json
+```
+
+Use your actual checkout path. The runner refuses a different commit or dirty target, loads the target's installed `esbuild` and `miniflare`, and bundles the actual server actions. It creates its own temporary D1 fixtures, never uses the checkout's `.wrangler` database, restarts only its own runtime, and removes only its own temporary directory. All requests use local Miniflare dispatch, not the hosted site. A failed assertion exits nonzero; do not treat an empty/partial redirected file as a passing record. Preserve the bundled result; choose a new output filename for later runs.
+
+The recorded run used Node v24.22.1 on macOS arm64 and already-installed dependencies. It did not test installing packages without networking. The output intentionally omits absolute personal paths and contains only fictional training data. Review any future output before sharing it.
+
+### Speaker/reviewer prompts to practice
+
+Assign actual teammates before rehearsal; these prompts do not assign or credit contributions:
+
+- Build speaker: trace the form to the server action and bound SQL lookup. Explain hash comparison and why the success message is not a session.
+- Attack speaker: show an ordinary failed lab login before the supplied local bypass. Explain how input changes the SQL condition without discovering a password.
+- Defense speaker: distinguish secure-query parameterization from database isolation. Explain why the intentionally vulnerable lab still needs a separate defended implementation and before/after evidence.
+- Reviewer: ask which exact commit was run, which database each action can reach, what a missing lab binding does, and which rubric requirements still lack proof.
+
+Do not fill speaker names, elapsed times, reviewer sign-offs or rubric scores from this automated run. Those require the real team session.
