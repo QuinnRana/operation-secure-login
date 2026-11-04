@@ -3,6 +3,7 @@
 import { env } from 'cloudflare:workers';
 
 import { hashPassword, safeEqual } from '@/lib/password';
+import { logLogin, reserveLoginAttempt } from '@/lib/login-security';
 
 export type LoginState = { status: 'idle' | 'error' | 'success'; message: string };
 
@@ -40,30 +41,44 @@ export async function login(
   if (usernames.length !== 1 || passwords.length !== 1 ||
       typeof usernames[0] !== 'string' || typeof passwords[0] !== 'string' ||
       usernames[0].length > 256 || passwords[0].length > 1024) {
+    logLogin('invalid_input');
     return { status: 'error', message: 'Enter one valid username and password within the supported lengths.' };
   }
   const username = usernames[0].trim();
   const password = passwords[0];
 
   if (!username || !password) {
+    logLogin('invalid_input');
     return { status: 'error', message: 'Enter both a username and password.' };
   }
 
-  await prepareDatabase();
-  const user = await env.DB.prepare(
-    'SELECT password_hash, password_salt FROM users WHERE username = ? LIMIT 1',
-  )
-    .bind(username)
-    .first<{ password_hash: string; password_salt: string }>();
+  try {
+    if (!await reserveLoginAttempt(env.DB, username)) {
+      logLogin('throttled');
+      return { status: 'error', message: 'Too many login attempts. Try again in a minute.' };
+    }
+    await prepareDatabase();
+    const user = await env.DB.prepare(
+      'SELECT password_hash, password_salt FROM users WHERE username = ? LIMIT 1',
+    )
+      .bind(username)
+      .first<{ password_hash: string; password_salt: string }>();
 
-  if (!user) {
-    return { status: 'error', message: 'The username or password is incorrect.' };
+    if (!user) {
+      logLogin('denied');
+      return { status: 'error', message: 'The username or password is incorrect.' };
+    }
+
+    const candidateHash = await hashPassword(password, user.password_salt);
+    if (!safeEqual(candidateHash, user.password_hash)) {
+      logLogin('denied');
+      return { status: 'error', message: 'The username or password is incorrect.' };
+    }
+
+    logLogin('success');
+    return { status: 'success', message: `Access granted. Welcome, ${username}.` };
+  } catch {
+    logLogin('unavailable');
+    return { status: 'error', message: 'Login is temporarily unavailable. Try again later.' };
   }
-
-  const candidateHash = await hashPassword(password, user.password_salt);
-  if (!safeEqual(candidateHash, user.password_hash)) {
-    return { status: 'error', message: 'The username or password is incorrect.' };
-  }
-
-  return { status: 'success', message: `Access granted. Welcome, ${username}.` };
 }
