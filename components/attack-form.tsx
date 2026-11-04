@@ -23,10 +23,10 @@ export function AttackForm() {
       </form>
 
       {state.status !== 'idle' && (
-        <div role="status" className={`rounded-xl border p-4 ${state.status === 'success' ? 'border-amber-300/30 bg-amber-300/10' : 'border-red-400/30 bg-red-400/10'}`}>
-          <p className="flex items-center gap-2 font-medium">{state.status === 'success' ? <DatabaseZap className="size-4 text-amber-300" /> : <TriangleAlert className="size-4 text-red-300" />}{state.message}</p>
+        <output className={`block rounded-xl border p-4 ${state.status === 'success' ? 'border-amber-300/30 bg-amber-300/10' : 'border-red-400/30 bg-red-400/10'}`}>
+          <span className="flex items-center gap-2 font-medium">{state.status === 'success' ? <DatabaseZap className="size-4 text-amber-300" /> : <TriangleAlert className="size-4 text-red-300" />}{state.message}</span>
           {state.query && <code className="mt-3 block overflow-x-auto rounded-lg bg-slate-950/70 p-3 text-xs leading-5 text-slate-300">{state.query}</code>}
-        </div>
+        </output>
       )}
 
       {state.records.length > 0 && (

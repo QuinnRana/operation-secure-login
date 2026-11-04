@@ -1,0 +1,1986 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- No outside scripts, styles or images may load; the page may only talk to https APIs (GitHub, GitLab). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https:; base-uri 'none'; form-action 'none'">
+<title>Nimbus Project Dashboard</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#010409; --panel:#161b22; --panel2:#0d1117; --border:#30363d; --border2:#21262d;
+  --text:#e6edf3; --muted:#8b949e; --faint:#6e7681; --accent:#2f81f7; --danger:#f85149; --ok:#3fb950; --warn:#d29922;
+  /* member accents: validated categorical slots (blue / orange / aqua / yellow) stepped for the dark surface */
+  --c-jera:#3987e5; --c-marcus:#d95926; --c-priya:#199e70; --c-noah:#c98500; --c-team:#768390;
+  --t-jera:#ffffff; --t-marcus:#ffffff; --t-priya:#03140d; --t-noah:#1a1200; --t-team:#ffffff;
+  --hm0:#161b22; --hm1:#0e4429; --hm2:#006d32; --hm3:#26a641; --hm4:#39d353;
+  --radius:8px; --shadow:0 8px 24px rgba(1,4,9,.55);
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#ffffff; --bg2:#f6f8fa; --panel:#ffffff; --panel2:#f6f8fa; --border:#d0d7de; --border2:#eaeef2;
+  --text:#1f2328; --muted:#636c76; --faint:#8c959f; --accent:#0969da; --danger:#cf222e; --ok:#1a7f37; --warn:#9a6700;
+  --c-jera:#2a78d6; --c-marcus:#eb6834; --c-priya:#1baf7a; --c-noah:#eda100; --c-team:#6e7781;
+  --t-jera:#ffffff; --t-marcus:#ffffff; --t-priya:#03140d; --t-noah:#1a1200; --t-team:#ffffff;
+  --hm0:#ebedf0; --hm1:#9be9a8; --hm2:#40c463; --hm3:#30a14e; --hm4:#216e39;
+  --shadow:0 8px 24px rgba(140,149,159,.3);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+button{font-family:inherit}
+code,.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;font-size:12px}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+.brand .dot{width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,var(--c-marcus),var(--c-jera))}
+.brand small{font-weight:500;color:var(--muted);font-size:12px}
+.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:3px;flex-wrap:wrap}
+.tab{padding:5px 14px;border-radius:6px;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px;border:none;background:none;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--accent);color:#fff}
+.tab .cnt{font-size:11px;background:rgba(127,127,127,.25);border-radius:20px;padding:0 6px}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:#238636;border-color:rgba(240,246,252,.1);color:#fff}
+.btn.primary:hover{background:#2ea043}
+.btn.ghost{background:none}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.on{border-color:var(--accent);color:var(--accent)}
+.btn.attn{border-color:var(--warn);color:var(--warn)}
+select.sel,input.inp{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:13px;font-family:inherit}
+select.sel:focus,input.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,129,247,.25)}
+.viewer{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.status-line{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--faint)}
+.status-line .dirty{color:var(--warn);font-weight:600}
+.status-line .ok{color:var(--ok)}
+.legend{display:flex;gap:14px;align-items:center;padding:7px 16px;background:var(--panel2);border-bottom:1px solid var(--border);flex-wrap:wrap;font-size:12px}
+.legend .item{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.legend .sw{width:12px;height:12px;border-radius:3px}
+.avatar{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;border:2px solid var(--panel)}
+.avatars{display:inline-flex}.avatars .avatar{margin-left:-6px}.avatars .avatar:first-child{margin-left:0}
+
+.menu{position:relative}
+.menu summary{list-style:none}.menu summary::-webkit-details-marker{display:none}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px;z-index:40;min-width:170px;display:flex;flex-direction:column}
+.menu-pop button{background:none;border:none;color:var(--text);text-align:left;padding:7px 10px;border-radius:5px;cursor:pointer;font-size:13px}
+.menu-pop button:hover{background:var(--accent);color:#fff}
+.menu-pop button.danger{color:var(--danger)}.menu-pop button.danger:hover{background:var(--danger);color:#fff}
+.menu-pop{min-width:240px;max-width:320px}
+.menu-pop hr{border:none;border-top:1px solid var(--border2);margin:4px 0}
+.menu-sec{font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px;padding:8px 10px 2px}
+.menu-pop .proj{display:flex;gap:8px;align-items:flex-start}
+.menu-pop .proj .ck{width:12px;flex:none;color:var(--ok)}
+.menu-pop .proj span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu-pop .proj small{display:block;font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis}
+.menu-pop button:hover small,.menu-pop button:hover .ck{color:inherit;opacity:.85}
+
+/* ---------- connect project ---------- */
+.tokhelp{border:1px solid var(--border);border-radius:8px;background:var(--panel2);padding:10px 12px;font-size:13px;line-height:1.5}
+.tokhelp summary{cursor:pointer;font-weight:600;color:var(--accent)}
+.tokhelp p{margin:8px 0}
+.tokhelp ol{margin:6px 0;padding-left:20px}
+.tokhelp li{margin:4px 0}
+.tokhelp code{background:var(--border2);padding:0 5px;border-radius:4px}
+.warnbox{border:1px solid var(--warn);color:var(--text);background:color-mix(in srgb,var(--warn) 10%,transparent);border-radius:8px;padding:8px 12px;font-size:13px}
+.warnbox b{color:var(--warn)}
+.cerr{border:1px solid var(--danger);color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);border-radius:8px;padding:8px 12px;font-size:13px}
+.saved-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2);font-size:13px}
+.saved-row:last-child{border-bottom:none}
+.saved-row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#view{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.pane{flex:1;overflow:auto;min-height:0}
+.card-p{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius)}
+.card-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-h h3{margin:0;font-size:14px;font-weight:600}
+.card-h .sub{color:var(--muted);font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;line-height:18px}
+.sp{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:18px;padding:0 6px;border-radius:20px;background:var(--border2);color:var(--text);font-size:11px;font-weight:700;border:1px solid var(--border)}
+.lbl{font-size:11px;padding:0 7px;border-radius:20px;font-weight:600;line-height:18px;border:1px solid transparent}
+
+/* ---------- KPI strip ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:12px 16px 0}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;min-width:0}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.kpi .v{font-size:20px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{height:6px;border-radius:3px;background:var(--border2);overflow:hidden;margin-top:6px}
+.meter>i{display:block;height:100%;background:var(--ok);border-radius:3px}
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:20px;border:1px solid var(--border);background:var(--panel);cursor:pointer;font-size:12px;font-weight:600;color:var(--text)}
+.chip.off{opacity:.38}
+.chip .avatar{width:18px;height:18px;border:none}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.seg button{background:var(--panel);border:none;color:var(--muted);padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:none}
+.seg button.active{background:var(--accent);color:#fff}
+
+/* ---------- GANTT spreadsheet ---------- */
+.g-scroll{flex:1;overflow:auto;min-height:0;border-top:1px solid var(--border);position:relative}
+.gantt{--leftw:720px;--cols:1fr 108px 46px 66px 66px;position:relative;min-width:max-content}
+.gantt.nodates{--leftw:580px;--cols:1fr 108px 46px}
+.gantt.nodates .c-date{display:none}
+.g-head{display:flex;position:sticky;top:0;z-index:8;background:var(--bg2);border-bottom:1px solid var(--border)}
+.g-cells{display:grid;grid-template-columns:var(--cols);width:var(--leftw);flex:none;position:sticky;left:0;z-index:4;background:var(--panel2);border-right:1px solid var(--border)}
+.g-head .g-cells{z-index:9;background:var(--bg2);height:66px;align-items:end}
+.g-head .g-cells>div{padding:0 10px 7px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.g-head .g-cells>div.r{text-align:right}
+.g-timehead{position:relative;flex:none;height:66px}
+.th-months,.th-sprints,.th-ranges{position:absolute;left:0;right:0;display:block}
+.th-months{top:0;height:20px;border-bottom:1px solid var(--border2)}
+.th-sprints{top:20px;height:26px}
+.th-ranges{top:46px;height:20px}
+.th-m{position:absolute;top:0;height:20px;border-left:1px solid var(--border);font-size:11px;font-weight:700;padding:2px 8px;color:var(--text);white-space:nowrap;overflow:hidden}
+.th-m.tbd{color:var(--warn)}
+.th-s{position:absolute;top:0;height:46px;border-left:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;padding:0 2px;overflow:hidden}
+.th-s:hover{background:rgba(47,129,247,.10)}
+.th-s b{font-size:12px;color:var(--text);white-space:nowrap}
+.th-s span{font-size:10px;color:var(--faint);white-space:nowrap}
+.th-s.cur{background:rgba(47,129,247,.14);box-shadow:inset 0 -2px 0 var(--accent)}
+.th-s.cur b{color:var(--accent)}
+.th-s .ext{position:absolute;top:2px;right:4px;font-size:9px;color:var(--warn)}
+.th-s .pen{position:absolute;top:2px;left:4px;font-size:10px;color:var(--faint);opacity:0}
+.th-s:hover .pen{opacity:1}
+.g-body{position:relative}
+.g-bg{position:absolute;top:0;bottom:0;left:var(--leftw);pointer-events:none;z-index:0}
+.g-bg .sb{position:absolute;top:0;bottom:0}
+.g-bg .sb.alt{background:rgba(110,118,129,.045)}
+.g-bg .sb.cur{background:rgba(47,129,247,.07)}
+.g-bg .ln{position:absolute;top:0;bottom:0;border-left:1px dashed var(--border2)}
+.g-bg .ln.m{border-left:1px solid var(--border)}
+.g-bg .ln.due{border-left:2px dashed var(--ok);opacity:.7}
+.g-bg .ln.today{border-left:2px solid #f778ba;z-index:2}
+.g-bg .today-tag{position:sticky;top:0;font-size:10px;font-weight:700;color:#fff;background:#f778ba;padding:0 5px;border-radius:0 3px 3px 0;margin-left:-1px;display:inline-block}
+.g-group>.g-kids{display:grid;grid-template-rows:1fr;transition:grid-template-rows .3s ease,opacity .3s ease;opacity:1}
+.g-group.collapsed>.g-kids{grid-template-rows:0fr;opacity:0}
+.g-kids-inner{min-height:0;overflow:clip}
+.g-row{display:flex;position:relative;z-index:1}
+.g-row>.g-cells>div{display:flex;align-items:center;padding:0 10px;min-width:0;border-bottom:1px solid var(--border2);font-size:13px;white-space:nowrap}
+.g-row .g-track{position:relative;flex:none;border-bottom:1px solid var(--border2)}
+.g-row:hover .g-track{background:rgba(110,118,129,.06)}
+.g-row:hover>.g-cells{background:var(--bg)}
+.g-row.l1>.g-cells{background:var(--panel)}
+.g-row.l1>.g-cells>div,.g-row.l1 .g-track{height:40px;border-bottom-color:var(--border)}
+.g-row.l1 .g-track{background:color-mix(in srgb,var(--panel) 55%,transparent)}
+.g-row.l2>.g-cells>div,.g-row.l2 .g-track{height:36px}
+.g-row.l3>.g-cells>div,.g-row.l3 .g-track{height:34px}
+.g-row .c-name{gap:7px;cursor:pointer}
+.g-row.l1 .c-name{font-weight:700;padding-left:8px}
+.g-row.l2 .c-name{font-weight:600;padding-left:26px}
+.g-row.l3 .c-name{padding-left:52px;cursor:default}
+.g-row .c-r{justify-content:flex-end}
+.g-row .c-date{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.chev{border:none;background:none;color:var(--muted);cursor:pointer;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;padding:0;flex:none;transition:transform .3s ease}
+.chev:hover{background:var(--border2);color:var(--text)}
+.g-group.collapsed>.g-row .chev{transform:rotate(-90deg)}
+.mbar{width:4px;height:18px;border-radius:2px;flex:none}
+.obj-ico{width:10px;height:10px;border-radius:3px;border:2px solid;flex:none}
+.iss-ico{flex:none}
+.g-row .num{color:var(--faint);font-size:12px;flex:none;cursor:pointer}
+.g-row .num:hover{color:var(--accent);text-decoration:underline}
+.g-row .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.g-row.done .nm{color:var(--faint);text-decoration:line-through}
+.g-row .rowact{opacity:0;margin-left:auto;display:flex;gap:2px;flex:none}
+.g-row:hover .rowact{opacity:1}
+.iconbtn{border:1px solid transparent;background:none;color:var(--muted);cursor:pointer;border-radius:5px;font-size:12px;padding:1px 6px;line-height:16px}
+.iconbtn:hover{border-color:var(--border);color:var(--text);background:var(--panel)}
+.g-row.dim{opacity:.35}
+.cnt-badge{font-size:11px;font-weight:600;padding:0 7px;border-radius:20px;background:var(--border2);color:var(--muted);flex:none}
+
+/* inline edit, GitHub style */
+.ed{position:relative;border-radius:4px;cursor:text}
+.ed:hover{box-shadow:inset 0 0 0 1px var(--border)}
+.nm.ed:hover::after{content:"✎";font-size:11px;color:var(--faint);margin-left:6px}
+.editing{box-shadow:none!important;overflow:visible!important}
+.ie{display:flex;align-items:center;gap:4px;width:100%}
+.ie input,.ie select{width:100%;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:5px;padding:3px 6px;font-size:12.5px;font-family:inherit;box-shadow:0 0 0 3px rgba(47,129,247,.25);outline:none}
+.ie .btn{padding:2px 8px;font-size:11.5px}
+.g-row .ed.flash{animation:flash 1.2s ease}
+@keyframes flash{0%{background:rgba(63,185,80,.35)}100%{background:transparent}}
+
+.bar{position:absolute;top:7px;height:20px;border-radius:5px;display:flex;align-items:center;gap:5px;padding:0 4px 0 6px;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;cursor:grab;box-shadow:0 1px 2px rgba(0,0,0,.35);min-width:8px;touch-action:none;user-select:none;transition:filter .12s}
+.bar:hover{filter:brightness(1.12)}
+.bar.dragging{cursor:grabbing;filter:brightness(1.15);outline:2px solid var(--text);z-index:5}
+.bar.tbd{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 6px,transparent 6px 12px)}
+.bar.done{opacity:.5}
+.bar.late{box-shadow:0 0 0 2px var(--danger)}
+.bar .bsp{background:rgba(0,0,0,.25);border-radius:9px;padding:0 5px;font-size:10px;line-height:15px;flex:none}
+.bar .btxt{overflow:hidden;text-overflow:ellipsis}
+.bar .rh{position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize}
+.bar .rh:hover{background:rgba(255,255,255,.3)}
+.sbar{position:absolute;border-radius:3px;overflow:hidden;pointer-events:auto}
+.sbar>i{position:absolute;left:0;top:0;bottom:0}
+.sbar.ms{top:15px;height:10px}
+.sbar.obj{top:14px;height:8px;opacity:.85}
+.diamond{position:absolute;top:13px;width:14px;height:14px;transform:rotate(45deg);border:2px solid var(--bg);margin-left:-7px}
+.sbar-lbl{position:absolute;top:12px;font-size:11px;color:var(--muted);white-space:nowrap;font-weight:600}
+
+/* ---------- board ---------- */
+.board{display:flex;gap:12px;padding:12px 16px 16px;min-width:max-content;height:100%}
+.bcol{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);width:280px;display:flex;flex-direction:column;max-height:100%}
+.bcol h3{margin:0;padding:10px 12px;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.bcol h3 .cnt{margin-left:auto;background:var(--border2);color:var(--muted);border-radius:20px;padding:1px 8px;font-size:11px}
+.bcol .list{padding:8px;overflow:auto;display:flex;flex-direction:column;gap:8px;flex:1;min-height:60px;transition:background .15s}
+.bcol .list.dragover{background:rgba(47,129,247,.08);outline:2px dashed var(--accent);outline-offset:-4px;border-radius:6px}
+.kcard{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--c-team);border-radius:6px;padding:8px 10px;cursor:grab;font-size:13px;transition:transform .12s,box-shadow .12s}
+.kcard:hover{box-shadow:var(--shadow)}
+.kcard.drag{opacity:.4}
+.kcard .ctop{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:11px;margin-bottom:3px}
+.kcard .cname{line-height:1.35}
+.kcard .cbot{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+
+/* ---------- activity ---------- */
+.hm-wrap{overflow-x:auto;padding:12px 14px 6px}
+.hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,13px);gap:3px}
+.hm .d{width:13px;height:13px;border-radius:2px;background:var(--hm0);outline:1px solid rgba(127,127,127,.12);outline-offset:-1px;cursor:pointer}
+.hm .d.l1{background:var(--hm1)}.hm .d.l2{background:var(--hm2)}.hm .d.l3{background:var(--hm3)}.hm .d.l4{background:var(--hm4)}
+.hm .d.fut{background:transparent;outline:1px dashed rgba(127,127,127,.18);cursor:default}
+.hm .d.pad{visibility:hidden}
+.hm .d.sel{outline:2px solid var(--text);outline-offset:0}
+.hm .d.today{outline:2px solid #f778ba;outline-offset:0}
+.hm-months{position:relative;height:16px;font-size:11px;color:var(--muted)}
+.hm-months span{position:absolute;top:0}
+.hm-days{display:grid;grid-template-rows:repeat(7,13px);gap:3px;font-size:10px;color:var(--muted);padding-right:6px}
+.hm-days span{line-height:13px}
+.hm-legend{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.hm-legend i{width:11px;height:11px;border-radius:2px;display:inline-block}
+.feed{padding:0 14px 14px}
+.feed .day{font-size:12px;font-weight:700;color:var(--muted);padding:14px 0 6px;border-bottom:1px solid var(--border2);margin-bottom:4px;position:sticky;top:0;background:var(--panel);z-index:1}
+.ev{display:flex;gap:10px;padding:7px 0;align-items:flex-start;font-size:13px;border-bottom:1px dashed var(--border2)}
+.ev:last-child{border-bottom:none}
+.ev .ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;border:1px solid var(--border);background:var(--panel2)}
+.ev .body{flex:1;min-width:0;line-height:1.45}
+.ev .body .meta{font-size:11px;color:var(--faint)}
+.ev .ref{cursor:pointer;color:var(--accent)}
+.ev .ref:hover{text-decoration:underline}
+.ev .who{font-weight:600}
+.ev code{background:var(--border2);padding:0 5px;border-radius:4px}
+.ev .time{font-size:11px;color:var(--faint);white-space:nowrap;flex:none}
+.ev.new{animation:flash 1.6s ease}
+.mem-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border2);font-size:13px}
+.mem-row:last-child{border-bottom:none}
+
+/* ---------- analytics ---------- */
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font-size:11px}
+.chart .axis{stroke:var(--border)}
+.chart .grid{stroke:var(--border2)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--border2);white-space:nowrap}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr:last-child td{border-bottom:none}
+.lg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* ---------- modal / tooltip / toast ---------- */
+.overlay{position:fixed;inset:0;background:rgba(1,4,9,.6);display:flex;align-items:flex-start;justify-content:center;z-index:50;padding:5vh 16px;opacity:0;pointer-events:none;transition:opacity .18s}
+.overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);width:100%;max-width:760px;max-height:90vh;overflow:auto;transform:translateY(8px);transition:transform .18s}
+.overlay.open .modal{transform:none}
+.modal header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:2}
+.modal header h2{margin:0;font-size:16px;flex:1}
+.modal header .x{cursor:pointer;color:var(--muted);font-size:22px;background:none;border:none;line-height:1}
+.mbody{padding:16px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.full{grid-column:1/-1}.field.two{grid-column:span 2}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:13px;font-family:inherit;min-width:0}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,129,247,.25)}
+.field textarea{resize:vertical;min-height:70px}
+.modal footer{display:flex;gap:10px;padding:12px 18px;border-top:1px solid var(--border);align-items:center;position:sticky;bottom:0;background:var(--panel)}
+.modal footer .del{color:var(--danger);margin-right:auto}
+.hist{padding:0 18px 12px}
+.hist h4{font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px;margin:6px 0 4px}
+.hint{font-size:12px;color:var(--faint)}
+#tip{position:fixed;z-index:80;pointer-events:none;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow);max-width:300px;opacity:0;transition:opacity .08s;line-height:1.45}
+#tip.on{opacity:1}
+#tip b{font-weight:700}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;box-shadow:var(--shadow);opacity:0;transition:all .2s;z-index:90;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%)}
+.zoomable{cursor:zoom-in;position:relative;transition:box-shadow .15s,border-color .15s}
+.zoomable:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.zoomable::after{content:"⤢";position:absolute;top:6px;right:9px;font-size:14px;color:var(--faint);opacity:0;transition:opacity .15s;pointer-events:none}
+.zoomable:hover::after{opacity:1}
+.card-p.zoomable .card-h{padding-right:30px}
+.zoom-modal{max-width:min(1280px,94vw)}
+#ovZoom{align-items:center;padding:3vh 16px}
+#ovZoom .modal{transform:scale(.92);transition:transform .2s ease}
+#ovZoom.open .modal{transform:none}
+#zoomBody{padding:16px 18px 20px}
+#zoomBody .card-p{border:none;background:none}
+#zoomBody .card-p>.card-h{border-bottom:1px solid var(--border2);padding:0 0 10px}
+#zoomBody .chart{max-width:min(1200px,calc(83vh * 2.4));margin:0 auto}
+#zoomBody .kpi{border:none;background:none;text-align:center;padding:30px}
+#zoomBody .kpi .k{font-size:14px}#zoomBody .kpi .v{font-size:64px}#zoomBody .kpi .s{font-size:16px;white-space:normal}
+#zoomBody .tbl{font-size:16px}#zoomBody .tbl td,#zoomBody .tbl th{padding:12px 16px}
+.empty{padding:30px;text-align:center;color:var(--faint)}
+@media (max-width:1640px){ .brand small{display:none} .topbar{gap:8px} }
+@media (max-width:760px){
+  body{height:auto;min-height:100vh;overflow:auto}
+  #view{overflow:visible}
+  .g-scroll{min-height:75vh;flex:none;height:75vh}
+  .legend .item span.role{display:none}
+  .gantt{--leftw:420px;--cols:1fr 60px 40px}
+  .gantt .c-date{display:none}
+  .mbody{grid-template-columns:1fr}.field.two{grid-column:auto}
+  .brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand" id="brand"><span class="dot"></span>Nimbus Project Dashboard <small>Campus Events Platform · Sep 2026 – Mar 2027</small></div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="overview">Overview / Gantt</button>
+    <button class="tab" data-view="activity">Activity</button>
+    <button class="tab" data-view="board">Issues / Board</button>
+    <button class="tab" data-view="analytics">Analytics</button>
+  </nav>
+  <div class="spacer"></div>
+  <span class="status-line" id="statusLine"></span>
+  <label class="viewer" title="Edits you make are recorded in the activity log under this name">Acting as
+    <select class="sel" id="viewer"></select></label>
+  <button class="btn" id="btnSave" title="Save to this browser (Ctrl+S)">Save</button>
+  <button class="btn ghost" id="btnTheme" title="Toggle light/dark" aria-label="Toggle theme"><svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+  <details class="menu"><summary class="btn ghost" title="More">•••</summary><div class="menu-pop">
+    <button id="btnConnect">Connect a project…</button>
+    <div class="menu-sec">Recent projects</div>
+    <div id="recentList" style="display:flex;flex-direction:column"></div>
+    <hr>
+    <button id="btnExport">Export JSON</button><button id="btnImport">Import JSON</button><button id="btnReset">Reset to mock data</button><button id="btnClear" class="danger">Clear all data…</button></div></details>
+  <input type="file" id="fileIn" accept="application/json" hidden>
+</div>
+<div class="legend" id="legend"></div>
+<section id="projectProgress" class="pane" style="margin:16px;padding:20px" aria-live="polite"></section>
+<main id="view"></main>
+
+<!-- issue modal -->
+<div class="overlay" id="ovIssue">
+  <div class="modal" role="dialog" aria-modal="true">
+    <header><h2 id="mTitle">Edit issue</h2><button class="x" data-close>&times;</button></header>
+    <div class="mbody">
+      <div class="field full"><label for="fTitle">Title</label><input id="fTitle" type="text"></div>
+      <div class="field full"><label for="fDesc">Description</label><textarea id="fDesc" placeholder="Describe the work, acceptance criteria, links…"></textarea></div>
+      <div class="field"><label for="fAssignee">Assignee</label><select id="fAssignee"></select></div>
+      <div class="field"><label for="fStatus">Status</label><select id="fStatus"></select></div>
+      <div class="field"><label for="fSp">Story points (weight)</label><select id="fSp"></select></div>
+      <div class="field"><label for="fMs">Milestone</label><select id="fMs"></select></div>
+      <div class="field two"><label for="fObj">Objective</label><select id="fObj"></select></div>
+      <div class="field"><label for="fStart">Start date</label><input id="fStart" type="date"></div>
+      <div class="field"><label for="fEnd">Due date</label><input id="fEnd" type="date"></div>
+      <div class="field"><label>Sprint</label><input id="fSprint" type="text" readonly></div>
+      <div class="field two"><label for="fDeps">Blocked by (issue #s, comma separated)</label><input id="fDeps" type="text" placeholder="e.g. 7, 8"></div>
+      <div class="field"><label for="fLabels">Labels</label><input id="fLabels" type="text" placeholder="design, web"></div>
+      <div class="field full"><label><input id="fTbd" type="checkbox" style="margin-right:6px">Date is TBD (not yet scheduled)</label></div>
+    </div>
+    <div class="hist" id="mHist"></div>
+    <footer>
+      <button class="btn del" id="mDelete">Delete issue</button>
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn primary" id="mSave">Save changes</button>
+    </footer>
+  </div>
+</div>
+
+<!-- sprint modal -->
+<div class="overlay" id="ovSprint">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:480px">
+    <header><h2 id="sTitle">Edit sprint</h2><button class="x" data-close>&times;</button></header>
+    <div class="mbody" style="grid-template-columns:1fr 1fr">
+      <div class="field full"><label for="sGoal">Sprint goal</label><input id="sGoal" type="text"></div>
+      <div class="field"><label for="sStart">Start</label><input id="sStart" type="date"></div>
+      <div class="field"><label for="sEnd">End</label><input id="sEnd" type="date"></div>
+      <div class="field full hint" id="sHint"></div>
+    </div>
+    <footer>
+      <button class="btn" data-close style="margin-left:auto">Cancel</button>
+      <button class="btn primary" id="sSave">Save sprint</button>
+    </footer>
+  </div>
+</div>
+
+<!-- connect project modal -->
+<div class="overlay" id="ovConn">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cTitle" style="max-width:620px">
+    <header><h2 id="cTitle">Connect a project</h2><button class="x" data-close aria-label="Close">&times;</button></header>
+    <div class="mbody" style="grid-template-columns:1fr 1fr">
+      <div class="field full"><label for="cUrl">Project link</label>
+        <input id="cUrl" type="text" spellcheck="false" placeholder="https://github.com/owner/repo  or  https://gitlab.com/group/project">
+        <div class="hint">Open your project in the browser and copy the address from the address bar.</div></div>
+      <div class="field"><label for="cProvider">Hosted on</label>
+        <select id="cProvider"><option value="github">GitHub</option><option value="gitlab">GitLab</option></select></div>
+      <div class="field"><label for="cName">Name in this dashboard (optional)</label><input id="cName" type="text" placeholder="e.g. Capstone team 3"></div>
+      <div class="field full"><label for="cToken">Access token <span id="cTokOpt" style="font-weight:400"></span></label>
+        <input id="cToken" type="password" autocomplete="off" spellcheck="false">
+        <div class="hint" id="cTokState"></div></div>
+      <div class="field full"><label for="cTtl">Keep the token on this computer for</label>
+        <select id="cTtl"><option value="tab">Only until I close this tab</option><option value="1">1 day</option><option value="7">7 days</option><option value="30">30 days</option></select></div>
+      <div class="field full warnbox" id="cShared"><span><b>⚠ Shared or lab computer?</b> Choose <b>Only until I close this tab</b>, and close the tab when you're done. Otherwise the next person to use this browser can open your project with your token.</span></div>
+      <div class="field full cerr" id="cErr" role="alert" hidden></div>
+      <div class="field full" id="cHelp"></div>
+      <div class="field full hint">The dashboard only reads from your project. Edits you make here stay in this browser and are not sent back to GitHub or GitLab.</div>
+    </div>
+    <div class="hist" id="cSaved"></div>
+    <footer>
+      <button class="btn" data-close style="margin-left:auto">Cancel</button>
+      <button class="btn primary" id="cGo">Connect</button>
+    </footer>
+  </div>
+</div>
+
+<!-- analytics zoom -->
+<div class="overlay" id="ovZoom">
+  <div class="modal zoom-modal" role="dialog" aria-modal="true">
+    <header><h2 id="zTitle"></h2><button class="x" data-close aria-label="Close">&times;</button></header>
+    <div id="zoomBody"></div>
+  </div>
+</div>
+
+<div id="tip"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   DATA LAYER
+   Everything the UI renders comes from fetchProject(conn). With no
+   connection it returns the MockSource demo; otherwise GitHubSource or
+   GitLabSource read the project's API and normalizeLive() maps the
+   results into the same plain shapes. Connections are set up from
+   ••• → Connect a project… and kept in the browser (see CONNECTIONS).
+   ===================================================================== */
+
+const MockSource = (() => {
+  const AS_OF = "2026-10-22";           // mock data is a snapshot taken on this date
+  // Nimbus: a fictional campus event booking platform (web + mobile), used as demo data.
+  // [id, title, assignee, start, end, milestone, blocked-by, tbd]
+  const TASKS = [
+    [1,"Project kickoff & working agreement","Team","2026-09-01","2026-09-02",1,[],false],
+    [2,"Stakeholder interviews","Team","2026-09-02","2026-09-08",1,[1],false],
+    [3,"Define user personas & journeys","Jera","2026-09-03","2026-09-09",1,[1],false],
+    [4,"Write API requirements","Marcus","2026-09-07","2026-09-11",1,[2],false],
+    [5,"Mobile platform requirements","Priya","2026-09-07","2026-09-11",1,[2],false],
+    [6,"Set up repo, branching & CI skeleton","Noah","2026-09-02","2026-09-07",1,[1],false],
+    [7,"Product requirements document","Jera","2026-09-10","2026-09-17",1,[3,4,5],false],
+    [8,"Requirements sign-off","Team","2026-09-18","2026-09-18",1,[7],false],
+    [9,"Low-fidelity wireframes","Jera","2026-09-21","2026-09-29",2,[8],false],
+    [10,"Design system & component tokens","Jera","2026-09-28","2026-10-09",2,[9],false],
+    [11,"High-fidelity mockups","Jera","2026-10-07","2026-10-21",2,[10],false],
+    [12,"Usability test round 1","Team","2026-10-19","2026-10-23",2,[11],false],
+    [13,"Data model & ERD","Marcus","2026-09-21","2026-09-30",2,[8],false],
+    [14,"REST API contract (OpenAPI)","Marcus","2026-09-29","2026-10-12",2,[13],false],
+    [15,"Auth & SSO approach","Marcus","2026-10-08","2026-10-16",2,[14],false],
+    [16,"Mobile app architecture","Priya","2026-09-21","2026-10-02",2,[8],false],
+    [17,"Offline sync strategy","Priya","2026-10-01","2026-10-14",2,[16],false],
+    [18,"Push notification design","Priya","2026-10-13","2026-10-22",2,[16],false],
+    [19,"Cloud infrastructure plan","Noah","2026-09-21","2026-10-02",2,[6],false],
+    [20,"Staging environment","Noah","2026-10-01","2026-10-16",2,[19],false],
+    [21,"Security & privacy review","Noah","2026-10-14","2026-10-23",2,[15,20],false],
+    [22,"Architecture decision records","Team","2026-10-19","2026-10-28",2,[14,17,21],false],
+    [23,"Architecture review deck","Jera","2026-10-22","2026-10-29",2,[22],false],
+    [24,"Auth service & user accounts","Marcus","2026-11-02","2026-11-13",3,[22],false],
+    [25,"Events & venues API","Marcus","2026-11-09","2026-11-25",3,[24],false],
+    [26,"Booking & waitlist API","Marcus","2026-11-23","2026-12-09",3,[25],false],
+    [27,"Web app shell & routing","Jera","2026-11-02","2026-11-10",3,[23],false],
+    [28,"Event discovery pages","Jera","2026-11-09","2026-11-24",3,[27,25],false],
+    [29,"Booking checkout flow (web)","Jera","2026-11-23","2026-12-08",3,[28,26],false],
+    [30,"Mobile app shell & navigation","Priya","2026-11-02","2026-11-11",3,[22],false],
+    [31,"Mobile event browsing","Priya","2026-11-10","2026-11-25",3,[30,25],false],
+    [32,"Mobile booking & tickets","Priya","2026-11-24","2026-12-09",3,[31,26],false],
+    [33,"CI/CD pipelines for web, API & mobile","Noah","2026-11-02","2026-11-13",3,[20],false],
+    [34,"Automated test suite setup","Noah","2026-11-12","2026-11-24",3,[33],false],
+    [35,"Observability & logging","Noah","2026-11-23","2026-12-04",3,[33],false],
+    [36,"MVP integration testing","Team","2026-12-09","2026-12-15",3,[29,32,34],false],
+    [37,"MVP demo","Team","2026-12-16","2026-12-18",3,[36],false],
+    [38,"Payments integration","Marcus","2027-01-04","2027-01-15",4,[37],false],
+    [39,"Calendar sync (Google & Outlook)","Marcus","2027-01-11","2027-01-22",4,[37],false],
+    [40,"Email & push notifications","Priya","2027-01-04","2027-01-15",4,[37],false],
+    [41,"Organizer dashboard","Jera","2027-01-04","2027-01-20",4,[37],false],
+    [42,"Accessibility audit & fixes","Jera","2027-01-18","2027-01-29",4,[41],false],
+    [43,"Load & performance testing","Noah","2027-01-18","2027-01-29",4,[38,39],false],
+    [44,"Beta onboarding & feedback form","Team","2027-01-25","2027-02-02",4,[41,40],false],
+    [45,"Closed beta with 50 users","Team","2027-02-01","2027-02-10",4,[44,43],false],
+    [46,"Beta bug triage","Team","2027-02-03","2027-02-12",4,[45],false],
+    [47,"Fix critical beta issues","Team","2027-02-15","2027-02-26",5,[46],true],
+    [48,"App store submissions","Priya","2027-02-22","2027-03-05",5,[47],true],
+    [49,"Production cutover plan","Noah","2027-02-22","2027-03-03",5,[47],true],
+    [50,"Marketing site & launch page","Jera","2027-02-22","2027-03-08",5,[47],true],
+    [51,"Admin & support runbooks","Marcus","2027-03-01","2027-03-10",5,[49],true],
+    [52,"Public launch","Team","2027-03-15","2027-03-17",5,[48,49,50],true],
+    [53,"Post-launch monitoring","Noah","2027-03-17","2027-03-26",5,[52],true],
+    [54,"Retrospective & handoff docs","Team","2027-03-22","2027-03-26",5,[52],true],
+  ];
+  const MILESTONES = [
+    {id:1, title:"M1 · Discovery & Requirements", color:"#bc8cff", due:"2026-09-18", note:"Requirements sign-off"},
+    {id:2, title:"M2 · Design & Architecture", color:"#58a6ff", due:"2026-10-30", note:"Architecture review"},
+    {id:3, title:"M3 · MVP Build", color:"#f778ba", due:"2026-12-18", note:"MVP demo"},
+    {id:4, title:"M4 · Beta & Integrations", color:"#e3b341", due:"2027-02-12", note:"Closed beta complete"},
+    {id:5, title:"M5 · Launch & Handoff", color:"#3fb950", due:null, note:"Public launch (date TBD)"},
+  ];
+  const OBJECTIVES = [
+    [1,"Kickoff & Stakeholders",[1,2]],
+    [1,"Requirements",[3,4,5,7,8]],
+    [1,"Engineering Setup",[6]],
+    [2,"UX & Visual Design",[9,10,11,12]],
+    [2,"Backend Architecture",[13,14,15]],
+    [2,"Mobile Architecture",[16,17,18]],
+    [2,"Infrastructure & Security",[19,20,21]],
+    [2,"Architecture Review",[22,23]],
+    [3,"Core Backend Services",[24,25,26]],
+    [3,"Web Experience",[27,28,29]],
+    [3,"Mobile Experience",[30,31,32]],
+    [3,"Quality & Delivery Pipeline",[33,34,35]],
+    [3,"MVP Demo",[36,37]],
+    [4,"Integrations",[38,39,40]],
+    [4,"Organizer Tools & Accessibility",[41,42]],
+    [4,"Performance",[43]],
+    [4,"Beta Program",[44,45,46]],
+    [5,"Launch Readiness",[47,48,49,50,51]],
+    [5,"Go Live",[52,53]],
+    [5,"Handoff",[54]],
+  ];
+  const AREA_OF = {Jera:"web", Marcus:"api", Priya:"mobile", Noah:"devops"};
+  const PEOPLE = ["Jera","Marcus","Priya","Noah"];
+  const COMMIT_MSGS = {
+    web:["Add event card component","Fix layout shift on discovery page","Wire up search filters","Add responsive nav menu","Update design tokens","Add form validation to checkout"],
+    api:["Add pagination to events endpoint","Add migration for bookings table","Validate venue capacity on booking","Refactor auth middleware","Add OpenAPI examples","Index events by start date"],
+    mobile:["Add pull-to-refresh on event list","Cache tickets for offline use","Fix deep link handling","Add push permission prompt","Update tab bar icons","Handle token refresh on resume"],
+    devops:["Add lint stage to pipeline","Configure staging secrets","Add uptime alerts","Speed up test job caching","Add preview deploys for MRs","Pin base image versions"],
+    docs:["Update architecture notes","Fix typos in requirements doc","Add meeting notes","Update risk log","Add decision record","Expand README setup steps"],
+  };
+  const COMMENTS = ["Pushed a first pass, feedback welcome.","Blocked on API keys until Thursday.","Linked the design spec in the description.","Can we review this in the next stand-up?","Updated the estimate after today's planning.","Looks good to me, merging after one more read.","Split the remaining work into a follow-up.","Added screenshots from the staging build."];
+
+  function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const pad=n=>String(n).padStart(2,"0");
+  const P=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+  const I=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  const add=(s,n)=>{const d=P(s);d.setDate(d.getDate()+n);return I(d);};
+  const span=(a,b)=>Math.round((P(b)-P(a))/864e5)+1;
+  const F=s=>P(s).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+
+  function spFor(title,start,end){
+    const d=span(start,end);
+    let sp = d<=2?2 : d<=4?3 : d<=7?5 : d<=12?8 : 13;
+    if(/document|records|deck|runbooks|docs/i.test(title) && sp<13) sp = sp===8?13:sp===5?8:sp===3?5:3;
+    if(/kickoff|sign-off|demo|Public launch/i.test(title)) sp=Math.min(sp,3);
+    return sp;
+  }
+  function labelsFor(title,assignee){
+    const L=[]; if(AREA_OF[assignee]) L.push(AREA_OF[assignee]);
+    if(/wireframe|mockup|design|architecture|model/i.test(title)) L.push("design");
+    if(/document|records|deck|runbook|docs/i.test(title)) L.push("docs");
+    if(/test|audit|triage|monitoring/i.test(title)) L.push("test");
+    if(/security|auth|privacy/i.test(title)) L.push("security");
+    return L;
+  }
+
+  function build(){
+    const R=rng(20260901);
+    const pick=a=>a[Math.floor(R()*a.length)];
+    const objectives=OBJECTIVES.map(([ms,title],i)=>({id:i+1, ms, title}));
+    const objOf={}; OBJECTIVES.forEach(([,,ids],i)=>ids.forEach(id=>objOf[id]=i+1));
+
+    const issues=TASKS.map(([id,title,assignee,start,end,ms,deps,tbd])=>{
+      let status="todo";
+      if(end<AS_OF) status="done";
+      else if(start<=AS_OF) status="progress";
+      else if(start<=add(AS_OF,14)) status="ready";
+      return {id, title, description:"", assignee, ms, obj:objOf[id], sp:spFor(title,start,end),
+        start, end, status, tbd, deps:deps.slice(), labels:labelsFor(title,assignee), closedAt:null};
+    });
+    const byId={}; issues.forEach(i=>byId[i.id]=i);
+    byId[15].status="review"; byId[18].status="review";
+    byId[14].description="OpenAPI 3.1 contract for events, venues, bookings and users, including error formats and pagination.";
+    byId[23].description="Summarize the architecture decision records, risks and open questions for the Oct 30 architecture review.";
+    issues.forEach(i=>{ if(i.status==="done"){ let c=i.end; if(R()<.3&&i.end>i.start) c=add(i.end,-1); i.closedAt=c; } });
+
+    // sprints: 2-week cadence from Sep 1 2026 through the end of March 2027
+    const sprints=[]; let s="2026-09-01", n=1;
+    const goals=["Kickoff & stakeholder interviews","Requirements & sign-off","Wireframes, data model & architecture","Design system, API contract & staging","Mockups, security & architecture review","Auth, app shells & pipelines","Core APIs & event discovery","Booking flows","MVP integration & demo"];
+    while(s<="2027-03-31"){ sprints.push({n, start:s, end:add(s,13), goal:goals[n-1]||""}); s=add(s,14); n++; }
+
+    // ---- activity log ----
+    const ev=[]; let eid=1;
+    const ts=(d,h,m)=>`${d}T${pad(h)}:${pad(m)}:00`;
+    const E=(t,actor,type,text,issue,meta)=>ev.push({id:eid++,ts:t,actor,type,text,issue:issue??null,meta:meta||null});
+    const who=i=>i.assignee==="Team"?pick(PEOPLE):i.assignee;
+
+    MILESTONES.forEach((m,k)=>E(ts("2026-09-01",9,2+k),PEOPLE[k%4],"milestone",`created milestone ${m.title}`));
+    E(ts("2026-09-01",9,12),"Noah","sprint",`planned ${sprints.length} two-week sprints starting Sep 1`);
+    issues.forEach(i=>{
+      const day = i.ms===1 ? "2026-09-01" : i.ms===2 ? "2026-09-02" : i.ms===3 ? "2026-09-21" : (i.ms===4?"2026-10-05":"2026-10-06");
+      const actor = i.assignee!=="Team" ? i.assignee : PEOPLE[i.id%4];
+      E(ts(day,10+Math.floor(i.id%8),(i.id*7)%60),actor,"issue_created",`opened issue #${i.id} ${i.title}`,i.id);
+    });
+    // a few issues that were later deleted
+    [[55,"Duplicate: login page wireframe","Jera","2026-09-22","Marcus","2026-09-23","duplicate of #9"],
+     [56,"Spike: evaluate Firebase for the backend","Marcus","2026-09-24","Marcus","2026-10-01","team chose managed Postgres"],
+     [57,"Placeholder: design tool licenses","Noah","2026-09-03","Noah","2026-09-08","covered by the team plan"]]
+     .forEach(([id,title,a,d,b,d2,why])=>{
+       E(ts(d,14,11),a,"issue_created",`opened issue #${id} ${title}`,id);
+       E(ts(d2,16,40),b,"issue_deleted",`deleted issue #${id} ${title} (${why})`,id);
+     });
+    issues.forEach(i=>{
+      if(i.start>AS_OF) return;
+      E(ts(i.start,9+Math.floor(R()*3),Math.floor(R()*60)),who(i),"status",`moved #${i.id} ${i.title} to In Progress`,i.id);
+      const dur=span(i.start,i.end);
+      if((i.status==="done"&&dur>=4)||i.status==="review"){
+        const rd=i.status==="review"?(i.end<AS_OF?i.end:AS_OF):add(i.closedAt,-1)<i.start?i.start:add(i.closedAt,-1);
+        E(ts(rd,15,Math.floor(R()*60)),who(i),"status",`moved #${i.id} ${i.title} to In Review`,i.id);
+      }
+      if(i.status==="done"){
+        const closer=who(i);
+        E(ts(i.closedAt,16+Math.floor(R()*5),Math.floor(R()*60)),closer,"issue_closed",`closed issue #${i.id} ${i.title}`,i.id);
+        if(i.assignee!=="Team"&&R()<.65){
+          const rev=pick(PEOPLE.filter(p=>p!==i.assignee));
+          E(ts(i.closedAt,15,Math.floor(R()*50)),rev,"mr_merged",`merged !${100+i.id} "${i.title}" from ${i.assignee}`,i.id);
+        }
+      }
+    });
+    // deadline / sprint extensions and edits
+    E(ts("2026-09-28",14,10),"Marcus","deadline",`extended due date of #13 Data model & ERD from ${F("2026-09-28")} to ${F("2026-09-30")}`,13);
+    E(ts("2026-10-09",17,3),"Noah","sprint_ext",`extended Sprint 3 end from ${F("2026-10-11")} to ${F("2026-10-12")}`,null,{sprint:3});
+    E(ts("2026-10-12",11,42),"Priya","deadline",`extended due date of #17 Offline sync strategy from ${F("2026-10-12")} to ${F("2026-10-14")}`,17);
+    E(ts("2026-10-16",19,20),"Jera","deadline",`extended due date of #11 High-fidelity mockups from ${F("2026-10-17")} to ${F("2026-10-21")}`,11);
+    E(ts("2026-10-13",10,5),"Marcus","issue_updated",`changed weight of #14 REST API contract (OpenAPI) from 8 to 13`,14);
+    E(ts("2026-10-20",13,30),"Noah","milestone",`updated milestone M2 · Design & Architecture (architecture review booked for Oct 30)`);
+    E(ts("2026-10-05",9,15),"Jera","issue_updated",`reassigned #12 Usability test round 1 from Jera to Team`,12);
+
+    // daily commits and comments
+    for(let d="2026-09-01"; d<=AS_OF; d=add(d,1)){
+      const dow=P(d).getDay(), weekend=dow===0||dow===6;
+      for(const p of PEOPLE){
+        const active=issues.filter(i=>i.start<=d&&i.end>=d&&(i.assignee===p||i.assignee==="Team"));
+        const lam = (active.length?2.4:0.5)*(weekend?0.35:1)*(p==="Marcus"?1.15:p==="Noah"?0.85:1);
+        const prob=lam/(1+lam); let k=0; while(R()<prob&&k<9) k++;
+        for(let c=0;c<k;c++){
+          const iss=active.length?pick(active):null;
+          const area=iss&&iss.labels.includes("docs")?"docs":AREA_OF[p];
+          const msg=pick(COMMIT_MSGS[area])+(iss?` (#${iss.id})`:"");
+          const branch=iss?`${area}/${iss.id}-${iss.title.toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,22).replace(/-$/,"")}`:"main";
+          const sha=Array.from({length:7},()=>"0123456789abcdef"[Math.floor(R()*16)]).join("");
+          E(ts(d,9+Math.floor(R()*14),Math.floor(R()*60)),p,"commit",msg,iss?iss.id:null,{sha,branch});
+        }
+        if(active.length&&!weekend&&R()<.22){ const iss=pick(active); E(ts(d,11+Math.floor(R()*8),Math.floor(R()*60)),p,"comment",`commented on #${iss.id} ${iss.title}: "${pick(COMMENTS)}"`,iss.id); }
+      }
+    }
+    ev.sort((a,b)=>a.ts<b.ts?1:a.ts>b.ts?-1:b.id-a.id);
+    return { asOf:AS_OF, source:"mock", milestones:MILESTONES.map(m=>({...m})), objectives, sprints, issues, events:ev, nextEventId:eid };
+  }
+  return { name:"mock", load: async () => build() };
+})();
+
+/* ---------- live sources: GitHub and GitLab ---------- */
+const PROVIDER_NAME = {github:"GitHub", gitlab:"GitLab"};
+function apiBase(c){
+  if(c.provider==="github") return c.host==="https://github.com" ? "https://api.github.com" : c.host+"/api/v3";
+  return c.host+"/api/v4";
+}
+async function api(c,path,params){
+  const url=new URL(apiBase(c)+path);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
+  const tok=await getToken(c), P=PROVIDER_NAME[c.provider];
+  const headers = c.provider==="github"
+    ? Object.assign({Accept:"application/vnd.github+json"}, tok?{Authorization:`Bearer ${tok}`}:{})
+    : (tok?{"PRIVATE-TOKEN":tok}:{});
+  let r;
+  try{ r=await fetch(url,{headers}); }
+  catch(e){ throw new Error(`Couldn't reach ${url.host}. Check the project link and your internet connection.`); }
+  if(r.ok) return r.json();
+  if(!tok&&expiredNow.has(connKey(c))&&[401,403,404].includes(r.status)) throw new Error(`The token saved on this computer for this project has expired. Paste it again below, or create a new one if you didn't keep a copy.`);
+  if(r.status===401) throw new Error(`${P} rejected the token. It may be mistyped, expired or deleted. Make a new one using the steps below.`);
+  if(r.status===403&&r.headers.get("x-ratelimit-remaining")==="0") throw new Error(`${P} allows only 60 requests an hour without a token, and that limit is used up. Add a token below and try again.`);
+  if(r.status===403) throw new Error(tok ? `The token isn't allowed to read this project. Check it has the read permissions listed below${c.provider==="github"?" and access to this repository":""}.` : `${P} refused access. Add a token below.`);
+  if(r.status===404) throw new Error(tok ? `Project not found. Check the link, and that the token has access to this project.` : `Project not found. Check the link. If the project is private, you need to add a token below.`);
+  throw new Error(`${P} returned an error (${r.status}). Try again in a minute.`);
+}
+async function apiAll(c,path,params,maxPages=5){
+  let out=[];
+  for(let page=1;page<=maxPages;page++){
+    const d=await api(c,path,Object.assign({},params,{per_page:100,page}));
+    out=out.concat(d); if(d.length<100) break;
+  }
+  return out;
+}
+const yearAgo = () => new Date(Date.now()-365*864e5).toISOString();
+
+const GitHubSource = { async load(c){
+  const r=`/repos/${c.project}`;
+  const repo=await api(c,r);
+  const [ms,all,commits]=await Promise.all([
+    apiAll(c,r+"/milestones",{state:"all"}),
+    apiAll(c,r+"/issues",{state:"all"}),
+    apiAll(c,r+"/commits",{since:yearAgo()},3).catch(()=>[]),   // empty repos return 409
+  ]);
+  return {
+    title:repo.full_name, sub:repo.description||"GitHub repository", url:repo.html_url, branch:repo.default_branch, mrPrefix:"#",
+    milestones:ms.map(m=>({id:m.number, title:m.title, due:m.due_on?m.due_on.slice(0,10):null, description:m.description})),
+    issues:all.filter(i=>!i.pull_request).map(i=>({id:i.number, title:i.title, description:i.body||"", assignee:i.assignee?.login, author:i.user?.login,
+      msId:i.milestone?.number, labels:i.labels.map(l=>typeof l==="string"?l:l.name), closed:i.state==="closed", createdAt:i.created_at, closedAt:i.closed_at})),
+    merges:all.filter(i=>i.pull_request?.merged_at).map(p=>({id:p.number, title:p.title, ts:p.pull_request.merged_at, actor:p.assignee?.login||p.user?.login})),
+    commits:commits.map(x=>({ts:x.commit.author.date, actor:x.author?.login||x.commit.author.name, msg:x.commit.message.split("\n")[0], sha:x.sha.slice(0,7)})),
+  };
+}};
+
+const GitLabSource = { async load(c){
+  const p=`/projects/${encodeURIComponent(c.project)}`;
+  const proj=await api(c,p);
+  const [ms,all,commits,mrs,members,iters]=await Promise.all([
+    apiAll(c,p+"/milestones",{}),
+    apiAll(c,p+"/issues",{scope:"all"}),
+    apiAll(c,p+"/repository/commits",{since:yearAgo()},3).catch(()=>[]),
+    apiAll(c,p+"/merge_requests",{state:"merged"},2).catch(()=>[]),
+    apiAll(c,p+"/members/all",{},2).catch(()=>[]),
+    apiAll(c,p+"/iterations",{},1).catch(()=>[]),      // GitLab Premium only
+  ]);
+  // commits carry the author's display name; map it to their username so it matches assignees
+  const userOf={}; members.forEach(m=>{ userOf[(m.name||"").toLowerCase()]=m.username; });
+  return {
+    title:proj.name_with_namespace, sub:proj.description||"GitLab project", url:proj.web_url, branch:proj.default_branch, mrPrefix:"!",
+    milestones:ms.map(m=>({id:m.id, title:m.title, due:m.due_date||null, description:m.description})),
+    issues:all.map(i=>({id:i.iid, title:i.title, description:i.description||"", assignee:(i.assignees&&i.assignees[0]||i.assignee)?.username, author:i.author?.username,
+      closer:i.closed_by?.username, msId:i.milestone?.id, labels:i.labels||[], closed:i.state==="closed", createdAt:i.created_at, closedAt:i.closed_at,
+      due:i.due_date||null, sp:i.weight||0, objTitle:i.epic?.title||null, start:i.iteration?.start_date||null})),
+    sprints:iters.map(it=>({start:it.start_date, end:it.due_date, goal:it.title||""})),
+    merges:mrs.map(m=>({id:m.iid, title:m.title, ts:m.merged_at, actor:m.merged_by?.username||m.author?.username})),
+    commits:commits.map(x=>({ts:x.created_at, actor:userOf[(x.author_name||"").toLowerCase()]||x.author_name, msg:x.title, sha:x.short_id})),
+  };
+}};
+
+/* Turn a provider's raw lists into the dashboard's shapes.
+   Conventions read from labels: "sp: 5" / "5 SP" → story points,
+   "objective::Name" → objective, "in progress" / "review" / "ready" → status,
+   and "blocked by #12" / "depends on #12" in the description → blockers. */
+const MS_COLORS = ["#bc8cff","#58a6ff","#f778ba","#e3b341","#3fb950","#ff9b6b","#56d4dd","#db61a2"];
+const SP_RE = /^(?:sp|story ?points?|points?|pts|weight|estimate)\s*[:=]{0,2}\s*(\d+)$|^(\d+)\s*(?:sp|pts?|points?)$/i;
+const OBJ_RE = /^(?:objective|epic)\s*:{1,2}\s*(.+)$/i;
+function statusOf(labels,closed){
+  if(closed) return "done";
+  const s=labels.join(" | ").toLowerCase();
+  if(/review/.test(s)) return "review";
+  if(/in[ -]?progress|doing|\bwip\b/.test(s)) return "progress";
+  if(/\bready\b|to[ -]?do/.test(s)) return "ready";
+  return "todo";
+}
+function normalizeLive(raw,provider){
+  const t=iso(new Date());
+  const day=s=>s?iso(new Date(s)):null;
+  const ts=s=>{ const d=new Date(s); return iso(d)+"T"+[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,"0")).join(":"); };
+  const who=s=>s?String(s).replace(/[<>&"'`]/g,""):"unknown";      // names are written into markup unescaped
+  const milestones=raw.milestones.map((m,k)=>({id:m.id, title:m.title, color:MS_COLORS[k%MS_COLORS.length], due:m.due||null,
+    note:(m.description||"").split("\n")[0].trim().slice(0,60)||(m.due?"":"Date TBD")}));
+  const msIds=new Set(milestones.map(m=>m.id)), ids=new Set(raw.issues.map(i=>i.id));
+  let loose=null;
+  const objectives=[], objIdx={};
+  const objFor=(ms,title)=>{ const k=ms+"|"+title; if(!objIdx[k]){ objectives.push({id:objectives.length+1, ms, title}); objIdx[k]=objectives.length; } return objIdx[k]; };
+  const ev=[];
+  const E=(when,actor,type,text,issue,meta)=>{ if(when) ev.push({ts:ts(when), actor:who(actor), type, text, issue:issue??null, meta:meta||null}); };
+
+  const issues=raw.issues.map(r=>{
+    let msId=r.msId;
+    if(!msIds.has(msId)){
+      if(!loose){ loose={id:Math.max(0,...milestones.map(m=>m.id))+1, title:"No milestone", color:"#768390", due:null, note:"Issues not in a milestone"}; milestones.push(loose); }
+      msId=loose.id;
+    }
+    const ms=milestones.find(m=>m.id===msId);
+    let sp=r.sp||0, obj=r.objTitle||null; const labels=[];
+    for(const l of r.labels){ const a=l.match(SP_RE), b=l.match(OBJ_RE); if(a) sp=sp||+(a[1]||a[2]); else if(b) obj=obj||b[1].trim(); else labels.push(l); }
+    const closedAt=r.closed?day(r.closedAt):null;
+    const start=r.start||day(r.createdAt);
+    let end=r.closed?closedAt:(r.due||ms.due||null);
+    const tbd=!r.closed&&!end;
+    if(!end) end=addD(start,13)>t?addD(start,13):t;
+    if(end<start) end=start;
+    const deps=[...r.description.matchAll(/(?:blocked by|depends on)[\s:]*((?:#\d+[\s,]*(?:and\s+)?)+)/gi)]
+      .flatMap(m=>[...m[1].matchAll(/#(\d+)/g)].map(x=>+x[1])).filter(d=>d!==r.id&&ids.has(d));
+    const assignee=r.assignee?who(r.assignee):"Team";
+    E(r.createdAt,r.author,"issue_created",`opened issue #${r.id} ${r.title}`,r.id);
+    if(r.closed) E(r.closedAt,r.closer||r.assignee||r.author,"issue_closed",`closed issue #${r.id} ${r.title}`,r.id);
+    return {id:r.id, title:r.title, description:r.description, assignee, ms:msId, obj:objFor(msId,obj||"Issues"), sp:sp||1,
+      start, end, status:statusOf(r.labels,r.closed), tbd, deps:[...new Set(deps)], labels, closedAt};
+  });
+  raw.merges.forEach(m=>E(m.ts,m.actor,"mr_merged",`merged ${raw.mrPrefix}${m.id} "${m.title}"`,null));
+  raw.commits.forEach(x=>{ const ref=(x.msg.match(/#(\d+)/)||[])[1]; E(x.ts,x.actor,"commit",x.msg,ref&&ids.has(+ref)?+ref:null,{sha:x.sha, branch:raw.branch||"main"}); });
+  ev.sort((a,b)=>a.ts<b.ts?1:a.ts>b.ts?-1:0); ev.forEach((e,k)=>e.id=ev.length-k);
+
+  // sprints: GitLab iterations when the project has them, otherwise a 2-week calendar around the work
+  let sprints=(raw.sprints||[]).filter(s=>s.start&&s.end).sort((a,b)=>a.start<b.start?-1:1).map((s,k)=>({n:k+1, start:s.start, end:s.end, goal:s.goal}));
+  if(!sprints.length){
+    let lo=[addD(t,-28),...issues.map(i=>i.start)].sort()[0]; if(lo<addD(t,-365)) lo=addD(t,-365);
+    let hi=[addD(t,28),...issues.map(i=>i.end),...milestones.map(m=>m.due).filter(Boolean)].sort().pop(); if(hi>addD(t,730)) hi=addD(t,730);
+    const d=pd(lo); d.setDate(d.getDate()-(d.getDay()+6)%7); lo=iso(d);    // start on a Monday
+    for(let s=lo,n=1;s<=hi;s=addD(s,14),n++) sprints.push({n, start:s, end:addD(s,13), goal:""});
+  }
+  const T0=sprints[0].start;
+  issues.forEach(i=>{ if(i.start<T0) i.start=T0; if(i.end<T0) i.end=T0; });
+
+  const count={}, assigned={}, commits={};
+  const bump=(o,n)=>{ if(n&&n!=="Team"&&n!=="unknown"&&!/\[bot\]$/i.test(n)) o[n]=(o[n]||0)+1; };
+  issues.forEach(i=>{ bump(count,i.assignee); bump(assigned,i.assignee); });
+  ev.forEach(e=>{ bump(count,e.actor); if(e.type==="commit") bump(commits,e.actor); });
+  const members=Object.keys(count).sort((a,b)=>count[b]-count[a]).map(name=>({name,
+    role:[assigned[name]?`${assigned[name]} issue${assigned[name]>1?"s":""}`:"",commits[name]?`${commits[name]} commit${commits[name]>1?"s":""}`:""].filter(Boolean).join(" · ")||"Contributor"}));
+
+  return { asOf:t, source:provider, project:{name:raw.title, sub:raw.sub, url:raw.url}, members,
+    milestones, objectives, sprints, issues, events:ev, nextEventId:ev.length+1 };
+}
+async function fetchProject(c){
+  if(!c) return MockSource.load();
+  return normalizeLive(await (c.provider==="github"?GitHubSource:GitLabSource).load(c), c.provider);
+}
+
+/* =====================================================================
+   CONFIG
+   ===================================================================== */
+// demo members use the theme-aware --c-<name> tokens; live projects get colors from MEMBER_PALETTE
+const DEMO_MEMBERS = [
+  {name:"Jera",  role:"Frontend · Web App", css:true},
+  {name:"Marcus",role:"Backend · API & Data", css:true},
+  {name:"Priya", role:"Mobile · iOS & Android", css:true},
+  {name:"Noah",  role:"DevOps · CI/CD & QA", css:true},
+];
+const MEMBER_PALETTE = [["#3987e5","#ffffff"],["#d95926","#ffffff"],["#199e70","#03140d"],["#c98500","#1a1200"],["#8957e5","#ffffff"],["#d6417f","#ffffff"],["#2b9fae","#03140d"],["#9a7b4f","#ffffff"]];
+let MEMBERS = {}, PEOPLE = [], ASSIGNEES = [];
+function applyMembers(){
+  const list=S.members||DEMO_MEMBERS;
+  MEMBERS={Team:{role:"Whole team / unassigned", css:true}};
+  list.forEach((m,k)=>{ const [color,text]=MEMBER_PALETTE[k%MEMBER_PALETTE.length]; MEMBERS[m.name]={role:m.role, css:!!m.css, color, text}; });
+  PEOPLE=list.map(m=>m.name); ASSIGNEES=[...PEOPLE,"Team"];
+  $("viewer").innerHTML=(PEOPLE.length?PEOPLE:["Team"]).map(p=>`<option>${esc(p)}</option>`).join("");
+  if(!PEOPLE.includes(ui.viewer)) ui.viewer=PEOPLE[0]||"Team";
+  $("viewer").value=ui.viewer;
+}
+const STATUSES = [["todo","Backlog","#768390"],["ready","Ready","#58a6ff"],["progress","In Progress","#d29922"],["review","In Review","#bc8cff"],["done","Done","#3fb950"]];
+const ST = Object.fromEntries(STATUSES.map(([k,l,c])=>[k,{label:l,color:c}]));
+const SP_SCALE = [1,2,3,5,8,13,21];
+const LABEL_COLORS = {web:"#3987e5",api:"#d95926",mobile:"#199e70",devops:"#c98500",design:"#8957e5",docs:"#6e7781",test:"#2da44e",security:"#da3633"};
+const LS_KEY = "secure_login_dashboard_v1", LS_UI = "secure_login_dashboard_ui_v1";
+const DAY = 864e5;
+const ICONS = {
+  commit:'<circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1 8h4M11 8h4" stroke="currentColor" stroke-width="1.6"/>',
+  issue_created:'<circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/>',
+  issue_closed:'<circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 8.2l2 2 3.8-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  issue_reopened:'<path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5v2.5h2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  issue_deleted:'<path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.6 4.5l.7 8.8h5.4l.7-8.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  issue_updated:'<path d="M10.5 2.5l3 3L6 13H3v-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  deadline:'<circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.6V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  sprint_ext:'<path d="M2.5 3.5h11v10h-11zM2.5 6.5h11M5.5 2v3M10.5 2v3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6 10h4M8.6 8.6L10 10l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.3"/>',
+  sprint:'<path d="M2.5 3.5h11v10h-11zM2.5 6.5h11M5.5 2v3M10.5 2v3" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+  comment:'<path d="M2.5 3h11v7.5H7l-3 2.5v-2.5H2.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  mr_merged:'<circle cx="4.5" cy="3.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="12.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="11.5" cy="8.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 5.3v5.4M4.5 6c0 2.5 2.5 2.5 5.2 2.5" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+  status:'<path d="M2 8h11M9.5 4.5L13 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  milestone:'<path d="M3.5 14V2M3.5 2.5h8l-2 3 2 3h-8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+};
+const EV_TYPES = {
+  commit:{label:"Commits",color:"var(--muted)"},
+  issue_created:{label:"Issues opened",color:"var(--ok)"},
+  issue_closed:{label:"Issues closed",color:"#a371f7"},
+  issue_reopened:{label:"Reopened",color:"var(--ok)"},
+  issue_deleted:{label:"Issues deleted",color:"var(--danger)"},
+  issue_updated:{label:"Issue edits",color:"var(--muted)"},
+  status:{label:"Status changes",color:"#58a6ff"},
+  deadline:{label:"Deadlines extended",color:"var(--warn)"},
+  sprint_ext:{label:"Sprints extended",color:"var(--warn)"},
+  sprint:{label:"Sprint edits",color:"var(--muted)"},
+  milestone:{label:"Milestone edits",color:"#bc8cff"},
+  mr_merged:{label:"Merge requests",color:"#a371f7"},
+  comment:{label:"Comments",color:"var(--muted)"},
+};
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+let S = null;            // {asOf, milestones, objectives, sprints, issues, events, nextEventId}
+let dirty = false;
+const ui = Object.assign({ view:"overview", theme:null, viewer:"Jera", collapsed:["ms-1","ms-4","ms-5"], zoom:8, nodates:false,
+  hidden:[], q:"", feedMember:"all", feedType:"all", feedQ:"", hmMember:"all", hmMetric:"all", hmDay:null, burn:"sprint",
+  boardMs:"all", boardWho:"all" }, readJSON(LS_UI) || {});
+function readJSON(k){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function saveUI(){ try{ localStorage.setItem(LS_UI, JSON.stringify(ui)); }catch(e){} }
+/* ---------- CONNECTIONS: recent projects, kept in this browser ---------- */
+const LS_CONN = "secure_login_dashboard_conn_v1";
+const conns = Object.assign({active:null, recent:[]}, readJSON(LS_CONN) || {});
+function saveConns(){ try{ localStorage.setItem(LS_CONN, JSON.stringify(conns)); }catch(e){} }
+const connKey = c => `${c.provider}:${c.host}/${c.project}`.toLowerCase();
+const activeConn = () => conns.recent.find(c=>connKey(c)===conns.active) || null;
+const dataKeyFor = c => c ? `${LS_KEY}@${connKey(c)}` : LS_KEY;     // each project keeps its own saved copy
+const dataKey = () => dataKeyFor(activeConn());
+/* ---------- TOKEN VAULT ----------
+   Tokens are never stored in plain text. Each one is encrypted with AES-GCM using a key
+   generated in this browser and kept in IndexedDB as non-extractable: the page can use it,
+   but no script or DevTools user can read the key out, and copying the browser's storage
+   files to another computer doesn't bring a usable key along.
+   Each token carries an expiry (TTL); "tab" tokens live in sessionStorage and die with the tab.
+   If Web Crypto or IndexedDB is unavailable, the token is kept in memory for this page only. */
+const LS_TOKENS = "pm_dashboard_tokens_v1", SS_TOKENS = "pm_dashboard_tokens_tab_v1";
+const memTokens = {}, expiredNow = new Set();
+let vaultKey = null;
+const vStore = w => w==="tab" ? sessionStorage : localStorage;
+function readVault(w){ try{ return JSON.parse(vStore(w).getItem(w==="tab"?SS_TOKENS:LS_TOKENS))||{}; }catch(e){ return {}; } }
+function writeVault(w,v){ try{ vStore(w).setItem(w==="tab"?SS_TOKENS:LS_TOKENS, JSON.stringify(v)); }catch(e){} }
+function idbKeys(mode,fn){
+  return new Promise((res,rej)=>{
+    const open=indexedDB.open("pm_dashboard_vault",1);
+    open.onupgradeneeded=()=>open.result.createObjectStore("keys");
+    open.onerror=()=>rej(open.error);
+    open.onsuccess=()=>{ const tx=open.result.transaction("keys",mode), q=fn(tx.objectStore("keys")); tx.oncomplete=()=>res(q&&q.result); tx.onerror=()=>rej(tx.error); };
+  });
+}
+async function getVaultKey(){
+  if(vaultKey) return vaultKey;
+  let k=await idbKeys("readonly",s=>s.get("token-key"));
+  if(!k){ k=await crypto.subtle.generateKey({name:"AES-GCM",length:256},false,["encrypt","decrypt"]); await idbKeys("readwrite",s=>s.put(k,"token-key")); }
+  return vaultKey=k;
+}
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s),ch=>ch.charCodeAt(0));
+// ttl: "tab" or a number of days
+async function saveToken(c,tok,ttl){
+  forgetToken(c);
+  if(!tok) return;
+  const id=connKey(c);
+  try{
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await getVaultKey(),new TextEncoder().encode(tok));
+    const w=ttl==="tab"?"tab":"local", v=readVault(w);
+    v[id]={iv:b64(iv), ct:b64(ct), exp:ttl==="tab"?null:Date.now()+ttl*864e5};
+    writeVault(w,v);
+  }catch(e){ memTokens[id]=tok; }
+}
+// {tab:true} | {exp:ms} | null — also drops expired tokens
+function tokenInfo(c){
+  const id=connKey(c), v=readVault("local");
+  if(v[id]){ if(v[id].exp>Date.now()) return {exp:v[id].exp}; delete v[id]; writeVault("local",v); expiredNow.add(id); }
+  return readVault("tab")[id]||memTokens[id] ? {tab:true} : null;
+}
+async function getToken(c){
+  const id=connKey(c);
+  if(!tokenInfo(c)) return "";
+  if(memTokens[id]) return memTokens[id];
+  const rec=readVault("local")[id]||readVault("tab")[id];
+  try{ return new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(rec.iv)},await getVaultKey(),unb64(rec.ct))); }
+  catch(e){ forgetToken(c); return ""; }
+}
+function forgetToken(c){
+  const id=connKey(c); delete memTokens[id];
+  for(const w of ["local","tab"]){ const v=readVault(w); if(v[id]){ delete v[id]; writeVault(w,v); } }
+}
+// wipes every token and destroys the key, so any copy of the encrypted data is useless
+async function forgetAllTokens(){
+  Object.keys(memTokens).forEach(k=>delete memTokens[k]);
+  writeVault("local",{}); writeVault("tab",{});
+  vaultKey=null;
+  try{ await idbKeys("readwrite",s=>s.delete("token-key")); }catch(e){}
+}
+function purgeExpiredTokens(){
+  const v=readVault("local"), now=Date.now(); let changed=false;
+  for(const id in v) if(!(v[id].exp>now)){ delete v[id]; expiredNow.add(id); changed=true; }
+  if(changed) writeVault("local",v);
+}
+function rememberConn(c){ conns.recent=[c,...conns.recent.filter(x=>connKey(x)!==connKey(c))].slice(0,6); }
+
+function persist(){
+  S.savedAt=new Date().toISOString();
+  try{ localStorage.setItem(dataKey(), JSON.stringify(S)); dirty=false; status(`Saved ${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`); toast("✓ Saved to this browser"); }
+  catch(e){ toast("⚠ Could not save: browser storage is blocked"); }
+}
+function markDirty(){ dirty=true; status(); }
+function status(msg){
+  const el=document.getElementById("statusLine");
+  el.innerHTML = dirty ? `<span class="dirty">● Unsaved changes</span>` : `<span class="ok">✓</span> ${esc(msg||lastStatus)}`;
+  if(msg) lastStatus=msg;
+  document.getElementById("btnSave").classList.toggle("attn", dirty);
+}
+let lastStatus = "Mock data";
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pd = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const addD = (s,n) => { const d=pd(s); d.setDate(d.getDate()+n); return iso(d); };
+const diff = (a,b) => Math.round((pd(b)-pd(a))/DAY);
+const fmt = s => s ? pd(s).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "—";
+const fmtL = s => pd(s).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+const mc = n => { const m=MEMBERS[n]; return !m ? "var(--c-team)" : m.css ? `var(--c-${n.toLowerCase()})` : m.color; };
+const mt = n => { const m=MEMBERS[n]; return !m ? "var(--t-team)" : m.css ? `var(--t-${n.toLowerCase()})` : m.text; };
+const avatar = (n,size) => `<span class="avatar" style="background:${mc(n)};color:${mt(n)};${size?`width:${size}px;height:${size}px;font-size:${Math.round(size/2)}px`:""}" title="${esc(n)}">${n==="Team"?"T":esc(n[0])}</span>`;
+const icon = (type,size=14) => `<svg width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">${ICONS[type]||ICONS.issue_updated}</svg>`;
+const issueIcon = i => i.status==="done"
+  ? `<svg class="iss-ico" width="14" height="14" viewBox="0 0 16 16" style="color:#a371f7">${ICONS.issue_closed}</svg>`
+  : `<svg class="iss-ico" width="14" height="14" viewBox="0 0 16 16" style="color:var(--ok)">${ICONS.issue_created}</svg>`;
+const labelHTML = l => { const c=LABEL_COLORS[l]||"#6e7781"; return `<span class="lbl" style="background:color-mix(in srgb,${c} 18%,transparent);color:color-mix(in srgb,${c} 75%,var(--text));border-color:color-mix(in srgb,${c} 40%,transparent)">${esc(l)}</span>`; };
+const byId = id => S.issues.find(i=>i.id===id);
+const msById = id => S.milestones.find(m=>m.id===id);
+const objById = id => S.objectives.find(o=>o.id===id);
+const nowISO = () => { const d=new Date(); return iso(d)+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+":"+String(d.getSeconds()).padStart(2,"0"); };
+// "today" for the timeline: the real date, unless it falls outside the project window
+function today(){ const t=iso(new Date()); return (t>=S.sprints[0].start && t<=S.sprints[S.sprints.length-1].end) ? t : S.asOf; }
+function sprintAt(d){ return S.sprints.find(s=>d>=s.start&&d<=s.end) || null; }
+function isLate(i){ return i.status!=="done" && i.end < today() && !i.tbd; }
+function logEvent(type,text,issue,meta){
+  const e={id:S.nextEventId++, ts:nowISO(), actor:ui.viewer, type, text, issue:issue??null, meta:meta||null, user:true};
+  S.events.unshift(e); markDirty(); return e;
+}
+function toast(msg){ const t=document.getElementById("toast"); t.innerHTML=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),2200); }
+
+/* tooltip: any element with data-tip */
+const tip=document.getElementById("tip");
+document.addEventListener("mouseover",e=>{ const el=e.target.closest("[data-tip]"); if(!el||dragState){ tip.classList.remove("on"); return; } tip.innerHTML=el.dataset.tip; tip.classList.add("on"); });
+document.addEventListener("mousemove",e=>{ if(!tip.classList.contains("on")) return; const w=tip.offsetWidth,h=tip.offsetHeight; let x=e.clientX+14,y=e.clientY+14; if(x+w>innerWidth-8)x=e.clientX-w-14; if(y+h>innerHeight-8)y=e.clientY-h-14; tip.style.left=x+"px"; tip.style.top=y+"px"; });
+document.addEventListener("mouseout",e=>{ if(e.target.closest("[data-tip]")&&!e.relatedTarget?.closest?.("[data-tip]")) tip.classList.remove("on"); });
+
+/* =====================================================================
+   RENDER ROOT
+   ===================================================================== */
+const view=document.getElementById("view");
+const BRAND_DEMO = document.getElementById("brand").innerHTML, TITLE_DEMO = document.title;
+function render(){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===ui.view));
+  renderBrand();
+  renderProjectProgress();
+  renderLegend();
+  ({overview:renderOverview, activity:renderActivity, board:renderBoard, analytics:renderAnalytics})[ui.view]();
+}
+function renderProjectProgress(){
+  const el=document.getElementById("projectProgress");
+  if(!S.project){ el.textContent="Demo project — sample data, not your team’s progress."; return; }
+  const isTeam=activeConn()?.project==="QuinnRana/operation-secure-login";
+  const tasks=S.issues.filter(i=>!isTeam || i.id!==15);
+  const done=tasks.filter(i=>i.status==="done").length;
+  const pct=tasks.length?Math.round(done/tasks.length*100):null;
+  const remaining=tasks.filter(i=>i.status!=="done");
+  el.innerHTML=`<h2>Project completion: ${pct===null?"Not tracked yet":pct+"%"}</h2>
+    <p>${done} of ${tasks.length} tasks marked complete · ${remaining.length} remaining</p>
+    ${pct===null?"":`<progress value="${done}" max="${tasks.length}" style="width:100%" aria-label="Project tasks completed"></progress>`}
+    <p>Based on issue status, with each task counted equally${isTeam?"; the START HERE roadmap (#15) is excluded":""}. This is not a grade or an automatic code audit. Local edits affect this view; update issues on GitHub and reload for shared team progress.</p>
+    <h3>What still needs work</h3>
+    ${remaining.length?`<ul>${remaining.map(i=>`<li><a href="${esc(S.project.url)}/issues/${i.id}" target="_blank" rel="noopener">#${i.id} · ${esc(i.title)}</a> — ${esc(i.assignee||"Unassigned")}</li>`).join("")}</ul>`:tasks.length?"<p>All tracked tasks are marked complete. Verify the rubric and supporting evidence before submitting.</p>":"<p>Create GitHub issues for the required work to begin tracking progress.</p>"}`;
+}
+function renderBrand(){
+  const p=S.project;
+  document.getElementById("brand").innerHTML = p ? `<span class="dot"></span>${esc(p.name)} <small>${esc(p.sub)}</small>` : BRAND_DEMO;
+  document.title = p ? `${p.name} · Project Dashboard` : TITLE_DEMO;
+}
+function renderLegend(){
+  let h="";
+  for(const p of PEOPLE) h+=`<span class="item"><span class="sw" style="background:${mc(p)}"></span><b style="color:var(--text)">${p}</b><span class="role">· ${MEMBERS[p].role}</span></span>`;
+  h+=`<span class="item"><span class="sw" style="background:${mc("Team")}"></span>Team / All</span>`;
+  h+=`<span class="item"><span class="sw" style="background:repeating-linear-gradient(45deg,var(--warn) 0 3px,transparent 3px 6px);border:1px solid var(--warn)"></span>TBD date</span>`;
+  h+=`<span class="item"><span class="sw" style="box-shadow:0 0 0 2px var(--danger) inset"></span>Overdue</span>`;
+  document.getElementById("legend").innerHTML=h;
+}
+
+/* =====================================================================
+   OVERVIEW · KPI strip + Gantt spreadsheet
+   ===================================================================== */
+function stats(){
+  const t=today(), sp=sprintAt(t);
+  const all=S.issues, done=all.filter(i=>i.status==="done");
+  const spTot=all.reduce((a,i)=>a+i.sp,0), spDone=done.reduce((a,i)=>a+i.sp,0);
+  const next=S.milestones.filter(m=>m.due&&m.due>=t).sort((a,b)=>a.due<b.due?-1:1)[0];
+  const sprintIssues=sp?all.filter(i=>i.end>=sp.start&&i.end<=sp.end):[];
+  const sprintSp=sprintIssues.reduce((a,i)=>a+i.sp,0), sprintDone=sprintIssues.filter(i=>i.status==="done").reduce((a,i)=>a+i.sp,0);
+  const commitsSprint=sp?S.events.filter(e=>e.type==="commit"&&e.ts.slice(0,10)>=sp.start&&e.ts.slice(0,10)<=sp.end).length:0;
+  return {t,sp,all,done,spTot,spDone,next,sprintSp,sprintDone,sprintIssues,commitsSprint,late:all.filter(isLate)};
+}
+function renderOverview(){
+  const keep=document.querySelector(".g-scroll"); const pos=keep?{l:keep.scrollLeft,t:keep.scrollTop}:null;
+  const s=stats();
+  const pct=(a,b)=>b?Math.round(a/b*100):0;
+  let h=`<div class="kpis">
+    <div class="kpi"><div class="k">Current sprint</div><div class="v">${s.sp?`Sprint ${s.sp.n}`:"—"}</div><div class="s">${s.sp?`${fmt(s.sp.start)} – ${fmt(s.sp.end)} · ${diff(s.t,s.sp.end)} days left`:"Outside the project window"}</div>
+      <div class="meter"><i style="width:${pct(s.sprintDone,s.sprintSp)}%;background:var(--accent)"></i></div></div>
+    <div class="kpi"><div class="k">Issues closed</div><div class="v">${s.done.length} <span style="color:var(--faint);font-size:14px">/ ${s.all.length}</span></div><div class="s">${pct(s.done.length,s.all.length)}% of all issues</div><div class="meter"><i style="width:${pct(s.done.length,s.all.length)}%"></i></div></div>
+    <div class="kpi"><div class="k">Story points done</div><div class="v">${s.spDone} <span style="color:var(--faint);font-size:14px">/ ${s.spTot}</span></div><div class="s">${pct(s.spDone,s.spTot)}% of planned points</div><div class="meter"><i style="width:${pct(s.spDone,s.spTot)}%"></i></div></div>
+    <div class="kpi"><div class="k">Next milestone</div><div class="v" style="font-size:16px;padding-top:3px">${s.next?esc(s.next.note||s.next.title):"—"}</div><div class="s">${s.next?`${fmt(s.next.due)} · in ${diff(s.t,s.next.due)} days`:""}</div></div>
+    <div class="kpi"><div class="k">Overdue</div><div class="v" style="color:${s.late.length?"var(--danger)":"var(--ok)"}">${s.late.length}</div><div class="s" data-tip="${esc(s.late.map(i=>`#${i.id} ${i.title}`).join("<br>")||"Nothing overdue")}">${s.late.length?s.late.map(i=>"#"+i.id).join(", "):"Nothing overdue"}</div></div>
+    <div class="kpi"><div class="k">Commits this sprint</div><div class="v">${s.commitsSprint}</div><div class="s">${s.sp?`Sprint ${s.sp.n}`:""} · all members</div></div>
+  </div>
+  <div class="toolbar">
+    <input class="inp" id="gq" type="search" placeholder="Filter issues…" value="${esc(ui.q)}" style="width:190px">
+    <div class="chips" id="gwho">${ASSIGNEES.map(p=>`<span class="chip${ui.hidden.includes(p)?" off":""}" data-who="${p}" title="Show/hide ${p}">${avatar(p)}${p}</span>`).join("")}</div>
+    <div class="spacer"></div>
+    <div class="seg" id="gLevel" title="Outline level">
+      <button data-lv="collapse" title="Show milestones only">Collapse all</button>
+      <button data-lv="summary" title="Show milestones and objectives, hide individual issues">Summary view</button>
+      <button data-lv="expand" title="Show milestones, objectives and every issue">Expand all</button>
+    </div>
+    <button class="btn sm${ui.nodates?" on":""}" id="gDates" title="Show or hide the start/due columns">Dates</button>
+    <div class="seg" id="gZoom" title="Timeline zoom">${[[4,"Month"],[8,"Sprint"],[16,"Week"]].map(([z,l])=>`<button data-z="${z}" class="${ui.zoom===z?"active":""}">${l}</button>`).join("")}</div>
+    <button class="btn sm" id="gAddMs" title="Add a milestone">+ Milestone</button>
+    <button class="btn sm" id="gToday">Today</button>
+  </div>
+  <div class="g-scroll" id="gscroll">${ganttHTML()}</div>`;
+  view.innerHTML=h;
+  const sc=document.getElementById("gscroll");
+  if(pos){ sc.scrollLeft=pos.l; sc.scrollTop=pos.t; } else if(!renderOverview._did){ scrollToToday(false); renderOverview._did=true; }
+  wireOverview();
+}
+function scrollToToday(smooth){ const sc=document.getElementById("gscroll"); if(!sc) return; const x=diff(S.sprints[0].start,today())*ui.zoom; sc.scrollTo({left:Math.max(0,x-ui.zoom*14),behavior:smooth?"smooth":"auto"}); }
+function matchIssue(i){
+  if(ui.hidden.includes(i.assignee)) return false;
+  if(ui.q){ const q=ui.q.toLowerCase(); if(!(`#${i.id} ${i.title} ${i.assignee} ${i.labels.join(" ")}`.toLowerCase().includes(q))) return false; }
+  return true;
+}
+function ganttHTML(){
+  const T0=S.sprints[0].start, T1=S.sprints[S.sprints.length-1].end, Z=ui.zoom;
+  const W=(diff(T0,T1)+1)*Z, X=d=>diff(T0,d)*Z, t=today(), cur=sprintAt(t);
+  // ---- header ----
+  let months="", m=pd(T0); m.setDate(1);
+  while(iso(m)<=T1){ const a=iso(m)<T0?T0:iso(m); const n=new Date(m.getFullYear(),m.getMonth()+1,1); const b=iso(n)>T1?addD(T1,1):iso(n);
+    const lab=m.toLocaleDateString("en-US",{month:Z<6?"short":"long",year:"numeric"});
+    months+=`<div class="th-m" style="left:${X(a)}px;width:${diff(a,b)*Z}px">${lab}</div>`; m=n; }
+  const extended=new Set(S.events.filter(e=>e.type==="sprint_ext"&&e.meta).map(e=>e.meta.sprint));
+  let sprints="";
+  for(const sp of S.sprints){
+    const w=(diff(sp.start,sp.end)+1)*Z, narrow=w<90;
+    sprints+=`<div class="th-s${cur&&cur.n===sp.n?" cur":""}" data-sprint="${sp.n}" style="left:${X(sp.start)}px;width:${w}px" data-tip="<b>Sprint ${sp.n}</b> · ${fmt(sp.start)} – ${fmt(sp.end)}${sp.goal?`<br>${esc(sp.goal)}`:""}<br><span style='color:var(--faint)'>Click to edit sprint dates</span>">
+      <span class="pen">✎</span>${extended.has(sp.n)?`<span class="ext" title="Deadline was extended">⏱</span>`:""}
+      <b>${narrow?"S":"Sprint "}${sp.n}</b><span>${narrow?fmt(sp.start).replace(/^(\w{3}) /,"$1 "):`${fmt(sp.start)} – ${fmt(sp.end)}`}</span></div>`;
+  }
+  let h=`<div class="gantt${ui.nodates?" nodates":""}" id="gantt" style="--gw:${W}px">
+   <div class="g-head"><div class="g-cells"><div>Milestone › Objective › Issue</div><div>Assignee</div><div class="r">SP</div><div class="c-date">Start</div><div class="c-date">Due</div></div>
+     <div class="g-timehead" style="width:${W}px"><div class="th-months">${months}</div><div class="th-sprints">${sprints}</div></div></div>
+   <div class="g-body">`;
+  // ---- background grid ----
+  let bg=`<div class="g-bg" style="width:${W}px">`;
+  S.sprints.forEach((sp,k)=>{ bg+=`<div class="sb${cur&&cur.n===sp.n?" cur":k%2?" alt":""}" style="left:${X(sp.start)}px;width:${(diff(sp.start,sp.end)+1)*Z}px"></div><div class="ln" style="left:${X(sp.start)}px"></div>`; });
+  m=pd(T0); m.setDate(1); m.setMonth(m.getMonth()+1); while(iso(m)<=T1){ bg+=`<div class="ln m" style="left:${X(iso(m))}px"></div>`; m.setMonth(m.getMonth()+1); }
+  S.milestones.forEach(ms=>{ if(ms.due) bg+=`<div class="ln due" style="left:${X(ms.due)+Z}px"></div>`; });
+  bg+=`<div class="ln today" style="left:${X(t)+Math.round(Z/2)}px"><span class="today-tag">Today</span></div></div>`;
+  h+=bg;
+  // ---- rows ----
+  const filtering = ui.q || ui.hidden.length;
+  if(!S.milestones.length) h+=`<div class="empty" style="position:sticky;left:0;width:min(100vw,720px)">No milestones yet. Click <b>+ Milestone</b> above to start planning.</div>`;
+  for(const ms of S.milestones){
+    const objs=S.objectives.filter(o=>o.ms===ms.id);
+    const msIssues=S.issues.filter(i=>i.ms===ms.id);
+    const shown=msIssues.filter(matchIssue);
+    if(filtering && !shown.length) continue;
+    h+=`<div class="g-group${ui.collapsed.includes("ms-"+ms.id)?" collapsed":""}" data-key="ms-${ms.id}">${summaryRow(1,ms,msIssues,X,Z)}<div class="g-kids"><div class="g-kids-inner">`;
+    for(const o of objs){
+      const oi=msIssues.filter(i=>i.obj===o.id), os=oi.filter(matchIssue);
+      if(filtering && !os.length) continue;
+      h+=`<div class="g-group${ui.collapsed.includes("obj-"+o.id)?" collapsed":""}" data-key="obj-${o.id}">${summaryRow(2,o,oi,X,Z,ms)}<div class="g-kids"><div class="g-kids-inner">`;
+      for(const i of os.sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:a.id-b.id)) h+=issueRow(i,X,Z);
+      if(!oi.length) h+=`<div class="g-row l3"><div class="g-cells"><div class="c-name" style="color:var(--faint);font-style:italic">No issues in this objective.</div><div></div><div></div><div class="c-date"></div><div class="c-date"></div></div><div class="g-track" style="width:${W}px"></div></div>`;
+      h+=`</div></div></div>`;
+    }
+    h+=`</div></div></div>`;
+  }
+  h+=`</div></div>`;
+  return h;
+}
+function summaryRow(level,obj,issues,X,Z,ms){
+  const W=(diff(S.sprints[0].start,S.sprints[S.sprints.length-1].end)+1)*Z;
+  const color = level===1 ? obj.color : ms.color;
+  const sp=issues.reduce((a,i)=>a+i.sp,0), spDone=issues.filter(i=>i.status==="done").reduce((a,i)=>a+i.sp,0);
+  const start=issues.length?issues.reduce((a,i)=>i.start<a?i.start:a,issues[0].start):null;
+  const end=issues.length?issues.reduce((a,i)=>i.end>a?i.end:a,issues[0].end):null;
+  const who=[...new Set(issues.map(i=>i.assignee))].sort((a,b)=>ASSIGNEES.indexOf(a)-ASSIGNEES.indexOf(b));
+  const pct=sp?Math.round(spDone/sp*100):0;
+  const kind=level===1?"ms":"obj";
+  const done=issues.filter(i=>i.status==="done").length;
+  let track="";
+  if(start){
+    const l=X(start), w=(diff(start,end)+1)*Z;
+    track+=`<div class="sbar ${kind}" style="left:${l}px;width:${w}px;background:color-mix(in srgb,${color} 30%,transparent)" data-tip="<b>${esc(obj.title)}</b><br>${fmt(start)} – ${fmt(end)}<br>${done}/${issues.length} issues · ${spDone}/${sp} SP (${pct}%)"><i style="width:${pct}%;background:${color}"></i></div>`;
+    if(level===1) track+=`<span class="sbar-lbl" style="left:${Math.max(l+w,obj.due?X(obj.due)+Z+8:0)+10}px">${pct}%${obj.note?" · "+esc(obj.note):""}</span>`;
+  }
+  if(level===1&&obj.due) track+=`<div class="diamond" style="left:${X(obj.due)+Z}px;background:${color}" data-tip="<b>${esc(obj.note)}</b><br>Due ${fmtL(obj.due)}"></div>`;
+  const chev=`<button class="chev" data-toggle aria-label="Expand or collapse">▼</button>`;
+  const head = level===1
+    ? `${chev}<span class="mbar" style="background:${color}"></span><span class="nm ed" data-ed="ms:${obj.id}:title">${esc(obj.title)}</span><span class="cnt-badge">${issues.length}</span>
+       <span class="rowact"><button class="iconbtn" data-act="add-obj" data-ms="${obj.id}" title="Add objective">+ Objective</button></span>`
+    : `${chev}<span class="obj-ico" style="border-color:${color}"></span><span class="nm ed" data-ed="obj:${obj.id}:title">${esc(obj.title)}</span><span class="cnt-badge">${done}/${issues.length}</span>
+`;
+  const dueCell = level===1
+    ? `<div class="c-date ed" data-ed="ms:${obj.id}:due" title="Milestone due date">${obj.due?fmt(obj.due):(obj.note.includes("TBD")?'<span style="color:var(--warn)">TBD</span>':"—")}</div>`
+    : `<div class="c-date">${fmt(end)}</div>`;
+  return `<div class="g-row l${level}"><div class="g-cells">
+      <div class="c-name">${head}</div>
+      <div><span class="avatars">${who.map(w=>avatar(w)).join("")}</span></div>
+      <div class="c-r"><span class="sp" data-tip="${spDone} of ${sp} story points done">${sp}</span></div>
+      <div class="c-date">${fmt(start)}</div>${dueCell}
+    </div><div class="g-track" style="width:${W}px">${track}</div></div>`;
+}
+function issueRow(i,X,Z){
+  const W=(diff(S.sprints[0].start,S.sprints[S.sprints.length-1].end)+1)*Z;
+  const l=X(i.start), w=Math.max((diff(i.start,i.end)+1)*Z,8);
+  const cls=["bar"]; if(i.tbd)cls.push("tbd"); if(i.status==="done")cls.push("done"); if(isLate(i))cls.push("late");
+  const showTxt=w>70;
+  const tipTxt=`<b>#${i.id} ${esc(i.title)}</b><br>${esc(i.assignee)} · ${i.sp} SP · ${ST[i.status].label}<br>${fmt(i.start)} – ${fmt(i.end)}${i.tbd?" (TBD)":""}${i.deps.length?`<br>Blocked by ${i.deps.map(d=>"#"+d).join(", ")}`:""}${isLate(i)?"<br><b style='color:var(--danger)'>Overdue</b>":""}<br><span style='color:var(--faint)'>Drag to move · drag right edge to resize · click to open</span>`;
+  return `<div class="g-row l3${i.status==="done"?" done":""}" data-issue="${i.id}"><div class="g-cells">
+      <div class="c-name">${issueIcon(i)}<span class="num" data-act="open" data-id="${i.id}">#${i.id}</span><span class="nm ed" data-ed="issue:${i.id}:title" title="${esc(i.title)}">${esc(i.title)}</span></div>
+      <div class="ed" data-ed="issue:${i.id}:assignee" style="gap:6px">${avatar(i.assignee)}<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(i.assignee)}</span></div>
+      <div class="c-r ed" data-ed="issue:${i.id}:sp"><span class="sp">${i.sp}</span></div>
+      <div class="c-date ed" data-ed="issue:${i.id}:start">${fmt(i.start)}</div>
+      <div class="c-date ed" data-ed="issue:${i.id}:end" style="${isLate(i)?"color:var(--danger);font-weight:600":""}">${fmt(i.end)}</div>
+    </div><div class="g-track" style="width:${W}px">
+      <div class="${cls.join(" ")}" data-bar="${i.id}" style="left:${l}px;width:${w}px;background:${mc(i.assignee)};color:${mt(i.assignee)}" data-tip="${esc(tipTxt)}">
+        <span class="bsp">${i.sp}</span>${showTxt?`<span class="btxt">${i.status==="done"?"✓ ":""}${esc(i.assignee==="Team"?i.title:i.assignee+" · "+i.title)}</span>`:""}<span class="rh"></span>
+      </div></div></div>`;
+}
+function wireOverview(){
+  const g=document.getElementById("gantt");
+  document.getElementById("gq").oninput=e=>{ ui.q=e.target.value; saveUI(); clearTimeout(wireOverview._t); wireOverview._t=setTimeout(()=>{ const sc=document.getElementById("gscroll"); const l=sc.scrollLeft,t=sc.scrollTop; sc.innerHTML=ganttHTML(); sc.scrollLeft=l; sc.scrollTop=t; wireGantt(); },120); };
+  document.getElementById("gwho").onclick=e=>{ const c=e.target.closest(".chip"); if(!c) return; const p=c.dataset.who; ui.hidden=ui.hidden.includes(p)?ui.hidden.filter(x=>x!==p):[...ui.hidden,p]; saveUI(); renderOverview(); };
+  document.getElementById("gLevel").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; setLevel(b.dataset.lv); };
+  document.getElementById("gDates").onclick=()=>{ ui.nodates=!ui.nodates; saveUI(); renderOverview(); };
+  document.getElementById("gToday").onclick=()=>scrollToToday(true);
+  document.getElementById("gAddMs").onclick=addMilestone;
+  document.getElementById("gZoom").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; const sc=document.getElementById("gscroll"); const ratio=+b.dataset.z/ui.zoom; const center=sc.scrollLeft+sc.clientWidth/2; ui.zoom=+b.dataset.z; saveUI(); renderOverview(); const sc2=document.getElementById("gscroll"); sc2.scrollLeft=center*ratio-sc2.clientWidth/2; };
+  wireGantt();
+}
+// outline levels: collapse = milestones only, summary = milestones + objectives, expand = everything
+function setLevel(lv){
+  const groups=[...document.querySelectorAll("#gantt .g-group")];
+  groups.forEach(gr=>{ const isObj=gr.dataset.key.startsWith("obj-");
+    gr.classList.toggle("collapsed", lv==="collapse" ? true : lv==="summary" ? isObj : false); });
+  ui.collapsed=groups.filter(gr=>gr.classList.contains("collapsed")).map(gr=>gr.dataset.key); saveUI();
+}
+function setAll(collapse){
+  const groups=[...document.querySelectorAll("#gantt .g-group")];
+  groups.forEach(gr=>gr.classList.toggle("collapsed",collapse));
+  ui.collapsed=collapse?groups.map(gr=>gr.dataset.key):[]; saveUI();
+}
+function wireGantt(){
+  const g=document.getElementById("gantt");
+  g.addEventListener("click",ganttClick);
+  g.addEventListener("pointerdown",barDown);
+}
+function ganttClick(e){
+  if(e.target.closest(".editing")) return;
+  const sh=e.target.closest(".th-s"); if(sh){ openSprint(+sh.dataset.sprint); return; }
+  const act=e.target.closest("[data-act]");
+  if(act){ const a=act.dataset.act;
+    if(a==="open") return openIssue(+act.dataset.id);
+    if(a==="add-obj") return addObjective(+act.dataset.ms);
+  }
+  const ed=e.target.closest(".ed"); if(ed) return startEdit(ed);
+  if(e.target.closest(".bar")) return; // handled by pointer logic
+  const row=e.target.closest(".g-row");
+  if(!row) return;
+  if(row.classList.contains("l3")){ if(row.dataset.issue && e.target.closest(".g-cells")) openIssue(+row.dataset.issue); return; }
+  if(e.target.closest("[data-toggle]")||e.target.closest(".g-cells")) toggleGroup(row.parentElement);
+}
+function toggleGroup(gr){
+  if(!gr||!gr.classList.contains("g-group")) return;
+  gr.classList.toggle("collapsed");
+  const k=gr.dataset.key; ui.collapsed=gr.classList.contains("collapsed")?[...new Set([...ui.collapsed,k])]:ui.collapsed.filter(x=>x!==k); saveUI();
+}
+function addMilestone(){
+  const id=Math.max(0,...S.milestones.map(m=>m.id))+1;
+  const palette=["#bc8cff","#58a6ff","#f778ba","#e3b341","#3fb950","#ff7b72","#79c0ff"];
+  S.milestones.push({id,title:`M${id} · New milestone`,color:palette[(id-1)%palette.length],due:null,note:""});
+  logEvent("milestone",`created milestone M${id} · New milestone`);
+  renderOverview();
+  const el=document.querySelector(`[data-ed="ms:${id}:title"]`); if(el){ el.scrollIntoView({block:"center"}); startEdit(el); }
+}
+function addObjective(msId){
+  const id=Math.max(0,...S.objectives.map(o=>o.id))+1;
+  S.objectives.push({id,ms:msId,title:"New objective"});
+  ui.collapsed=ui.collapsed.filter(k=>k!=="ms-"+msId);
+  logEvent("milestone",`added objective "New objective" to ${msById(msId).title}`);
+  renderOverview();
+  const el=document.querySelector(`[data-ed="obj:${id}:title"]`); if(el){ el.scrollIntoView({block:"center"}); startEdit(el); }
+}
+
+/* ---------- GitHub-style inline editing ---------- */
+function startEdit(cell){
+  if(cell.classList.contains("editing")) return;
+  const [kind,idS,field]=cell.dataset.ed.split(":"); const id=+idS;
+  const rec = kind==="issue"?byId(id) : kind==="ms"?msById(id) : objById(id);
+  const val = rec[field];
+  const orig = cell.innerHTML;
+  cell.classList.add("editing");
+  let ctl;
+  if(field==="assignee") ctl=`<select>${ASSIGNEES.map(a=>`<option ${a===val?"selected":""}>${a}</option>`).join("")}</select>`;
+  else if(field==="sp") ctl=`<select>${SP_SCALE.map(n=>`<option ${n===val?"selected":""}>${n}</option>`).join("")}</select>`;
+  else if(field==="start"||field==="end"||field==="due") ctl=`<input type="date" value="${val||""}">`;
+  else ctl=`<input type="text" value="${esc(val)}">`;
+  const wide = field==="title";
+  cell.innerHTML=`<span class="ie">${ctl}${wide?`<button class="btn primary sm" data-ok>Save</button><button class="btn sm" data-cancel>Cancel</button>`:""}</span>`;
+  if(wide){ cell.style.position="relative"; }
+  const input=cell.querySelector("input,select"); input.focus(); if(input.select&&field==="title") input.select();
+  let finished=false;
+  const finish=(commit)=>{
+    if(finished) return; finished=true;
+    cell.classList.remove("editing");
+    if(commit){ const nv=input.value; if(applyEdit(kind,id,field,nv)) return; }
+    cell.innerHTML=orig;
+  };
+  input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();finish(true);} if(e.key==="Escape"){e.preventDefault();finish(false);} });
+  if(input.tagName==="SELECT") input.addEventListener("change",()=>finish(true));
+  input.addEventListener("blur",()=>setTimeout(()=>finish(!cell.dataset.cancel),120));
+  cell.querySelectorAll("button").forEach(b=>b.addEventListener("mousedown",e=>{ e.preventDefault(); if(b.hasAttribute("data-cancel")) finish(false); else finish(true); }));
+}
+// returns true when it re-rendered
+function applyEdit(kind,id,field,nv){
+  if(kind==="issue"){
+    const i=byId(id); let ov=i[field];
+    if(field==="sp") nv=+nv;
+    if(field==="title"){ nv=nv.trim(); if(!nv) return false; }
+    if((field==="start"||field==="end") && !nv) return false;
+    if(nv===ov) return false;
+    if(field==="start"&&nv>i.end){ i.end=addD(nv,diff(i.start,i.end)); }
+    if(field==="end"&&nv<i.start){ toast("Due date can't be before the start date"); return false; }
+    i[field]=nv;
+    const ref=`#${i.id} ${i.title}`;
+    if(field==="title") logEvent("issue_updated",`renamed #${i.id} from "${ov}" to "${nv}"`,i.id);
+    else if(field==="assignee") logEvent("issue_updated",`reassigned ${ref} from ${ov} to ${nv}`,i.id);
+    else if(field==="sp") logEvent("issue_updated",`changed story points of ${ref} from ${ov} to ${nv}`,i.id);
+    else if(field==="end") logEvent(nv>ov?"deadline":"issue_updated",`${nv>ov?"extended":"moved"} due date of ${ref} from ${fmt(ov)} to ${fmt(nv)}`,i.id);
+    else if(field==="start") logEvent("issue_updated",`moved start of ${ref} from ${fmt(ov)} to ${fmt(nv)}`,i.id);
+  } else if(kind==="ms"){
+    const m=msById(id), ov=m[field];
+    if(field==="title"){ nv=nv.trim(); if(!nv||nv===ov) return false; m.title=nv; logEvent("milestone",`renamed milestone "${ov}" to "${nv}"`); }
+    if(field==="due"){ nv=nv||null; if(nv===ov) return false; m.due=nv; logEvent(ov&&nv&&nv>ov?"deadline":"milestone",ov&&nv&&nv>ov?`extended milestone ${m.title} from ${fmt(ov)} to ${fmt(nv)}`:`set due date of ${m.title} to ${nv?fmt(nv):"none"}`); }
+  } else {
+    const o=objById(id); nv=nv.trim(); if(!nv||nv===o.title) return false;
+    logEvent("milestone",`renamed objective "${o.title}" to "${nv}"`); o.title=nv;
+  }
+  render();
+  const el=document.querySelector(`[data-ed="${kind}:${id}:${field}"]`); if(el){ el.classList.add("flash"); }
+  toast("Edited · remember to Save");
+  return true;
+}
+
+/* ---------- drag to move / resize bars ---------- */
+let dragState=null;
+function barDown(e){
+  const bar=e.target.closest(".bar"); if(!bar||e.button!==0) return;
+  const i=byId(+bar.dataset.bar);
+  dragState={bar,i,x0:e.clientX,mode:e.target.classList.contains("rh")?"resize":"move",l0:bar.offsetLeft,w0:bar.offsetWidth,dd:0,moved:false};
+  bar.setPointerCapture(e.pointerId);
+  bar.addEventListener("pointermove",barMove); bar.addEventListener("pointerup",barUp,{once:true});
+  tip.classList.remove("on");
+}
+function barMove(e){
+  const d=dragState; if(!d) return;
+  const dx=e.clientX-d.x0; if(Math.abs(dx)>3) d.moved=true; if(!d.moved) return;
+  d.bar.classList.add("dragging");
+  d.dd=Math.round(dx/ui.zoom);
+  if(d.mode==="move") d.bar.style.left=(d.l0+d.dd*ui.zoom)+"px";
+  else d.bar.style.width=Math.max(ui.zoom,d.w0+d.dd*ui.zoom)+"px";
+  const ns=d.mode==="move"?addD(d.i.start,d.dd):d.i.start, ne=addD(d.i.end,d.dd);
+  tip.innerHTML=`<b>#${d.i.id}</b> ${fmt(ns)} – ${fmt(ne<ns?ns:ne)}`; tip.classList.add("on");
+  tip.style.left=(e.clientX+14)+"px"; tip.style.top=(e.clientY+14)+"px";
+}
+function barUp(){
+  const d=dragState; dragState=null; d.bar.removeEventListener("pointermove",barMove); d.bar.classList.remove("dragging"); tip.classList.remove("on");
+  if(!d.moved){ openIssue(d.i.id); return; }
+  if(!d.dd){ renderOverview(); return; }
+  const i=d.i, os=i.start, oe=i.end;
+  if(d.mode==="move"){ i.start=addD(os,d.dd); i.end=addD(oe,d.dd); logEvent(d.dd>0?"deadline":"issue_updated",`rescheduled #${i.id} ${i.title} from ${fmt(os)}–${fmt(oe)} to ${fmt(i.start)}–${fmt(i.end)}`,i.id); }
+  else { const ne=addD(oe,d.dd); i.end=ne<i.start?i.start:ne; logEvent(i.end>oe?"deadline":"issue_updated",`${i.end>oe?"extended":"shortened"} due date of #${i.id} ${i.title} from ${fmt(oe)} to ${fmt(i.end)}`,i.id); }
+  renderOverview(); toast("Rescheduled · remember to Save");
+}
+
+/* =====================================================================
+   ISSUE MODAL
+   ===================================================================== */
+let editing=null, draftDefaults=null;
+const $=id=>document.getElementById(id);
+function openIssue(id,defaults){
+  if(id===null&&!S.milestones.length){ toast("Add a milestone first (Overview → + Milestone)"); return; }
+  editing=id; draftDefaults=defaults||{};
+  const t=today();
+  const i = id===null ? {id:nextId(),title:"",description:"",assignee:ui.viewer,status:"todo",sp:3,ms:draftDefaults.ms||(msById(2)?2:S.milestones[0].id),obj:draftDefaults.obj||null,start:t,end:addD(t,6),tbd:false,deps:[],labels:[]} : byId(id);
+  if(!i) return;
+  $("mTitle").innerHTML = id===null ? "New issue" : `${issueIcon(i)} Issue #${i.id}`;
+  $("fTitle").value=i.title; $("fDesc").value=i.description||"";
+  $("fAssignee").innerHTML=ASSIGNEES.map(a=>`<option value="${a}">${a} — ${MEMBERS[a].role}</option>`).join(""); $("fAssignee").value=i.assignee;
+  $("fStatus").innerHTML=STATUSES.map(([k,l])=>`<option value="${k}">${l}</option>`).join(""); $("fStatus").value=i.status;
+  $("fSp").innerHTML=SP_SCALE.map(n=>`<option>${n}</option>`).join(""); $("fSp").value=i.sp;
+  $("fMs").innerHTML=S.milestones.map(m=>`<option value="${m.id}">${esc(m.title)}</option>`).join(""); $("fMs").value=i.ms;
+  fillObj(i.ms,i.obj);
+  $("fStart").value=i.start; $("fEnd").value=i.end; $("fTbd").checked=!!i.tbd;
+  $("fDeps").value=i.deps.join(", "); $("fLabels").value=i.labels.join(", ");
+  sprintHint();
+  $("mDelete").style.display=id===null?"none":"";
+  const hist=id===null?[]:S.events.filter(e=>e.issue===id).slice(0,40);
+  $("mHist").innerHTML = id===null?"" : `<h4>History · ${S.events.filter(e=>e.issue===id).length} events</h4>${hist.length?hist.map(evHTML).join(""):'<div class="hint">No activity yet.</div>'}`;
+  $("ovIssue").classList.add("open"); setTimeout(()=>$("fTitle").focus(),50);
+}
+function fillObj(ms,sel){ const os=S.objectives.filter(o=>o.ms===+ms); $("fObj").innerHTML=os.map(o=>`<option value="${o.id}">${esc(o.title)}</option>`).join(""); $("fObj").value=sel&&os.some(o=>o.id===sel)?sel:(os[0]?os[0].id:""); }
+function sprintHint(){ const s=$("fStart").value; const sp=s&&sprintAt(s); $("fSprint").value=sp?`Sprint ${sp.n} (${fmt(sp.start)} – ${fmt(sp.end)})`:"—"; }
+function nextId(){ const used=[...S.issues.map(i=>i.id),...S.events.filter(e=>e.issue).map(e=>e.issue)]; return Math.max(0,...used)+1; }
+function closeOverlays(){ document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("open")); editing=null; }
+function saveIssue(){
+  const title=$("fTitle").value.trim(); if(!title){ $("fTitle").focus(); return; }
+  let start=$("fStart").value||today(), end=$("fEnd").value||start; if(end<start) end=start;
+  const rec={title, description:$("fDesc").value, assignee:$("fAssignee").value, status:$("fStatus").value, sp:+$("fSp").value,
+    ms:+$("fMs").value, obj:+$("fObj").value||null, start, end, tbd:$("fTbd").checked,
+    deps:$("fDeps").value.split(",").map(x=>parseInt(x,10)).filter(x=>!isNaN(x)),
+    labels:$("fLabels").value.split(",").map(x=>x.trim()).filter(Boolean)};
+  if(!rec.obj){ const id=Math.max(0,...S.objectives.map(o=>o.id))+1; S.objectives.push({id,ms:rec.ms,title:"General"}); rec.obj=id; }
+  if(editing===null){
+    rec.id=nextId(); rec.closedAt=rec.status==="done"?today():null; S.issues.push(rec);
+    logEvent("issue_created",`opened issue #${rec.id} ${rec.title}`,rec.id);
+  } else {
+    const i=byId(editing), changes=[];
+    const ref=`#${i.id} ${rec.title}`;
+    if(i.status!==rec.status) setStatus(i,rec.status,true);
+    if(rec.end>i.end) logEvent("deadline",`extended due date of ${ref} from ${fmt(i.end)} to ${fmt(rec.end)}`,i.id);
+    else if(rec.end<i.end||rec.start!==i.start) changes.push("dates");
+    if(i.assignee!==rec.assignee) logEvent("issue_updated",`reassigned ${ref} from ${i.assignee} to ${rec.assignee}`,i.id);
+    if(i.sp!==rec.sp) logEvent("issue_updated",`changed story points of ${ref} from ${i.sp} to ${rec.sp}`,i.id);
+    if(i.title!==rec.title) changes.push("title");
+    if(i.description!==rec.description) changes.push("description");
+    if(i.ms!==rec.ms||i.obj!==rec.obj) changes.push("milestone/objective");
+    if(i.deps.join()!==rec.deps.join()) changes.push("dependencies");
+    if(i.labels.join()!==rec.labels.join()) changes.push("labels");
+    if(i.tbd!==rec.tbd) changes.push("TBD flag");
+    delete rec.status; Object.assign(i,rec);
+    if(changes.length) logEvent("issue_updated",`edited ${changes.join(", ")} of ${ref}`,i.id);
+  }
+  closeOverlays(); render(); toast("Issue saved · remember to Save");
+}
+function setStatus(i,ns,quiet){
+  const os=i.status; if(os===ns) return;
+  i.status=ns;
+  if(ns==="done"){ i.closedAt=today(); logEvent("issue_closed",`closed issue #${i.id} ${i.title}`,i.id); }
+  else if(os==="done"){ i.closedAt=null; logEvent("issue_reopened",`reopened issue #${i.id} ${i.title} (now ${ST[ns].label})`,i.id); }
+  else logEvent("status",`moved #${i.id} ${i.title} to ${ST[ns].label}`,i.id);
+}
+function deleteIssue(){
+  if(editing===null) return; const i=byId(editing);
+  if(!confirm(`Delete issue #${i.id} "${i.title}"? This is recorded in the activity log.`)) return;
+  S.issues=S.issues.filter(x=>x.id!==i.id); S.issues.forEach(x=>x.deps=x.deps.filter(d=>d!==i.id));
+  logEvent("issue_deleted",`deleted issue #${i.id} ${i.title}`,i.id);
+  closeOverlays(); render(); toast("Issue deleted · remember to Save");
+}
+
+/* ---------- sprint modal ---------- */
+let editingSprint=null;
+function openSprint(n){
+  const sp=S.sprints.find(s=>s.n===n); editingSprint=n;
+  $("sTitle").textContent=`Edit Sprint ${n}`; $("sGoal").value=sp.goal||""; $("sStart").value=sp.start; $("sEnd").value=sp.end;
+  const cnt=S.issues.filter(i=>i.end>=sp.start&&i.end<=sp.end);
+  $("sHint").innerHTML=`${cnt.length} issues (${cnt.reduce((a,i)=>a+i.sp,0)} SP) are due in this sprint. Moving the end date shifts the start of the next sprint so sprints never overlap.`;
+  $("ovSprint").classList.add("open");
+}
+function saveSprint(){
+  const k=S.sprints.findIndex(s=>s.n===editingSprint), sp=S.sprints[k];
+  const ns=$("sStart").value, ne=$("sEnd").value; if(!ns||!ne||ne<ns){ toast("End must be on or after start"); return; }
+  const os=sp.start, oe=sp.end, og=sp.goal;
+  sp.start=ns; sp.end=ne; sp.goal=$("sGoal").value.trim();
+  if(k>0&&S.sprints[k-1].end>=ns) S.sprints[k-1].end=addD(ns,-1);
+  for(let j=k+1;j<S.sprints.length;j++){ const a=S.sprints[j-1], b=S.sprints[j]; if(b.start<=a.end){ const len=diff(b.start,b.end); b.start=addD(a.end,1); if(b.end<b.start) b.end=addD(b.start,Math.max(len,13)); } else break; }
+  if(ne>oe) logEvent("sprint_ext",`extended Sprint ${sp.n} end from ${fmt(oe)} to ${fmt(ne)}`,null,{sprint:sp.n});
+  else if(ne!==oe||ns!==os) logEvent("sprint",`changed Sprint ${sp.n} dates to ${fmt(ns)} – ${fmt(ne)}`,null,{sprint:sp.n});
+  if(og!==sp.goal) logEvent("sprint",`set Sprint ${sp.n} goal to "${sp.goal}"`,null,{sprint:sp.n});
+  closeOverlays(); render();
+}
+
+/* =====================================================================
+   ACTIVITY · contribution graph + daily breakdown + feed
+   ===================================================================== */
+function dayCounts(member,metric){
+  const m={};
+  for(const e of S.events){
+    if(member!=="all"&&e.actor!==member) continue;
+    if(metric==="commits"&&e.type!=="commit") continue;
+    const d=e.ts.slice(0,10); (m[d]=m[d]||{n:0,by:{}}); m[d].n++; m[d].by[e.actor]=(m[d].by[e.actor]||0)+1;
+  }
+  return m;
+}
+function renderActivity(){
+  const feedEl=document.querySelector(".feed-scroll"); const ft=feedEl?feedEl.scrollTop:0;
+  const counts=dayCounts(ui.hmMember,ui.hmMetric);
+  const t=today(), T0=S.sprints[0].start, T1=S.sprints[S.sprints.length-1].end;
+  let start=pd(T0); start.setDate(start.getDate()-start.getDay()); const startI=iso(start);
+  let endD=pd(T1); endD.setDate(endD.getDate()+(6-endD.getDay())); const endI=iso(endD);
+  const max=Math.max(1,...Object.values(counts).map(c=>c.n));
+  const total=Object.values(counts).reduce((a,c)=>a+c.n,0);
+  const hue=ui.hmMember==="all"?null:mc(ui.hmMember);
+  let cells="", monthsLbl="", lastM=-1, col=0;
+  for(let d=startI; d<=endI; d=addD(d,1)){
+    const dd=pd(d); if(dd.getDay()===0){ const lm=pd(addD(d,6)); if(lm.getMonth()!==lastM&&addD(d,6)>=T0){ monthsLbl+=`<span style="left:${col*16}px">${lm.toLocaleDateString("en-US",{month:"short"})}</span>`; lastM=lm.getMonth(); } col++; }
+    if(d<T0||d>T1){ cells+=`<div class="d pad"></div>`; continue; }
+    if(d>t){ cells+=`<div class="d fut" data-tip="${fmtL(d)} · upcoming"></div>`; continue; }
+    const c=counts[d]; const n=c?c.n:0; const lvl=n?Math.min(4,Math.ceil(n/max*4)):0;
+    const style=hue&&lvl?`style="background:color-mix(in srgb,${hue} ${[0,40,62,82,100][lvl]}%,var(--hm0))"`:"";
+    const br=c?Object.entries(c.by).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span style='color:${mc(p)}'>●</span> ${p} ${v}`).join("<br>"):"";
+    cells+=`<div class="d${hue?"":" l"+lvl}${ui.hmDay===d?" sel":""}${d===t?" today":""}" ${style} data-day="${d}" data-tip="<b>${n} ${ui.hmMetric==="commits"?"commit":"contribution"}${n===1?"":"s"}</b> on ${fmtL(d)}${br?"<br>"+br:""}"></div>`;
+  }
+  const legendCells=[0,1,2,3,4].map(l=>hue?`<i style="background:${l?`color-mix(in srgb,${hue} ${[0,40,62,82,100][l]}%,var(--hm0))`:"var(--hm0)"}"></i>`:`<i style="background:var(--hm${l})"></i>`).join("");
+  const memStats=PEOPLE.map(p=>{ const ev=S.events.filter(e=>e.actor===p); return {p,commits:ev.filter(e=>e.type==="commit").length,closed:ev.filter(e=>e.type==="issue_closed").length,opened:ev.filter(e=>e.type==="issue_created").length,total:ev.length,streak:streak(p)}; });
+  view.innerHTML=`<div class="pane"><div class="p-4 flex flex-col gap-4" style="padding:16px;display:flex;flex-direction:column;gap:16px">
+   <section class="card-p">
+     <div class="card-h"><h3>${total.toLocaleString()} ${ui.hmMetric==="commits"?"commits":"contributions"} ${ui.hmMember==="all"?"across the team":"by "+ui.hmMember}</h3><span class="sub">${fmt(T0)}, ${T0.slice(0,4)} – ${fmt(T1)}, ${T1.slice(0,4)} · one square per day</span>
+       <div class="spacer" style="flex:1"></div>
+       <div class="seg" id="hmMember"><button data-m="all" class="${ui.hmMember==="all"?"active":""}">Team</button>${PEOPLE.map(p=>`<button data-m="${p}" class="${ui.hmMember===p?"active":""}">${p}</button>`).join("")}</div>
+       <div class="seg" id="hmMetric"><button data-k="all" class="${ui.hmMetric==="all"?"active":""}">All activity</button><button data-k="commits" class="${ui.hmMetric==="commits"?"active":""}">Commits</button></div>
+     </div>
+     <div class="hm-wrap"><div style="display:flex"><div class="hm-days" style="margin-top:16px"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+       <div><div class="hm-months">${monthsLbl}</div><div class="hm" id="hm">${cells}</div></div></div>
+       <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap"><span class="hint">Click a day to filter the feed.${ui.hmDay?` Showing <b>${fmtL(ui.hmDay)}</b> · <a href="#" id="hmClear">clear</a>`:""}</span><div style="flex:1"></div><div class="hm-legend">Less ${legendCells} More</div></div></div>
+   </section>
+   <div class="grid gap-4" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px">
+     <section class="card-p"><div class="card-h"><h3>Daily commits by member</h3><span class="sub">Last 6 weeks</span></div><div class="chart" style="padding:12px 14px">${dailyStack()}</div></section>
+     <section class="card-p"><div class="card-h"><h3>Contributors</h3><span class="sub">Since Sep 1</span></div>
+       ${memStats.sort((a,b)=>b.total-a.total).map(s=>`<div class="mem-row">${avatar(s.p,28)}<div style="flex:1;min-width:0"><div style="font-weight:600">${s.p}</div><div class="hint">${MEMBERS[s.p].role}</div></div>
+         <div class="hint" style="text-align:right;line-height:1.5"><b style="color:var(--text)">${s.commits}</b> commits · <b style="color:var(--text)">${s.closed}</b> closed · <b style="color:var(--text)">${s.opened}</b> opened<br>${s.streak}-day streak · ${s.total} events</div></div>`).join("")}
+     </section>
+   </div>
+   <section class="card-p" style="display:flex;flex-direction:column">
+     <div class="card-h"><h3>Activity stream</h3><span class="sub" id="feedCount"></span><div style="flex:1"></div>
+       <input class="inp" id="feedQ" type="search" placeholder="Search activity…" value="${esc(ui.feedQ)}" style="width:180px">
+       <select class="sel" id="feedMember"><option value="all">All members</option>${PEOPLE.map(p=>`<option ${ui.feedMember===p?"selected":""}>${p}</option>`).join("")}</select>
+       <select class="sel" id="feedType"><option value="all">All event types</option>${Object.entries(EV_TYPES).map(([k,v])=>`<option value="${k}" ${ui.feedType===k?"selected":""}>${v.label}</option>`).join("")}</select>
+     </div>
+     <div class="feed" id="feed"></div>
+   </section></div></div>`;
+  renderFeed();
+  $("hmMember").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; ui.hmMember=b.dataset.m; saveUI(); renderActivity(); };
+  $("hmMetric").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; ui.hmMetric=b.dataset.k; saveUI(); renderActivity(); };
+  $("hm").onclick=e=>{ const c=e.target.closest("[data-day]"); if(!c) return; ui.hmDay=ui.hmDay===c.dataset.day?null:c.dataset.day; saveUI(); renderActivity(); };
+  if($("hmClear")) $("hmClear").onclick=e=>{ e.preventDefault(); ui.hmDay=null; saveUI(); renderActivity(); };
+  $("feedQ").oninput=e=>{ ui.feedQ=e.target.value; saveUI(); feedLimit=120; renderFeed(); };
+  $("feedMember").onchange=e=>{ ui.feedMember=e.target.value; saveUI(); feedLimit=120; renderFeed(); };
+  $("feedType").onchange=e=>{ ui.feedType=e.target.value; saveUI(); feedLimit=120; renderFeed(); };
+}
+function streak(p){ const days=new Set(S.events.filter(e=>e.actor===p).map(e=>e.ts.slice(0,10))); let n=0, d=today(); if(!days.has(d)) d=addD(d,-1); while(days.has(d)){ n++; d=addD(d,-1); } return n; }
+let feedLimit=120;
+function renderFeed(){
+  const q=ui.feedQ.toLowerCase();
+  const list=S.events.filter(e=>(ui.feedMember==="all"||e.actor===ui.feedMember)&&(ui.feedType==="all"||e.type===ui.feedType)&&(!ui.hmDay||e.ts.startsWith(ui.hmDay))&&(!q||(e.actor+" "+e.text+" "+(e.meta?.branch||"")+" "+(e.meta?.sha||"")).toLowerCase().includes(q)));
+  $("feedCount").textContent=`${list.length.toLocaleString()} events`;
+  let h="", lastDay="";
+  for(const e of list.slice(0,feedLimit)){
+    const d=e.ts.slice(0,10); if(d!==lastDay){ h+=`<div class="day">${fmtL(d)}</div>`; lastDay=d; }
+    h+=evHTML(e);
+  }
+  if(!list.length) h=`<div class="empty">No activity matches these filters.</div>`;
+  if(list.length>feedLimit) h+=`<div style="text-align:center;padding:12px"><button class="btn" id="feedMore">Show more (${(list.length-feedLimit).toLocaleString()} older)</button></div>`;
+  $("feed").innerHTML=h;
+  if($("feedMore")) $("feedMore").onclick=()=>{ feedLimit+=200; renderFeed(); };
+}
+function linkRefs(s){ return esc(s).replace(/#(\d+)/g,(m,n)=>byId(+n)?`<span class="ref" data-open="${n}">#${n}</span>`:`<span style="color:var(--faint)">#${n}</span>`); }
+function evHTML(e){
+  const T=EV_TYPES[e.type]||EV_TYPES.issue_updated;
+  const time=new Date(e.ts).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  const body = e.type==="commit"
+    ? `<span class="who" style="color:${mc(e.actor)}">${esc(e.actor)}</span> pushed to <code>${esc(e.meta.branch)}</code><div><code>${esc(e.meta.sha)}</code> ${linkRefs(e.text)}</div>`
+    : `<span class="who" style="color:${mc(e.actor)}">${esc(e.actor)}</span> ${linkRefs(e.text)}`;
+  return `<div class="ev${e.user&&Date.now()-new Date(e.ts)<4000?" new":""}"><span class="ico" style="color:${T.color}">${icon(e.type)}</span><div class="body">${body}<div class="meta">${T.label}${e.user?" · edited in dashboard":""}</div></div><span class="time" title="${esc(e.ts.replace("T"," "))}">${ui.view==="activity"?time:fmt(e.ts.slice(0,10))+" "+time}</span></div>`;
+}
+document.addEventListener("click",e=>{ const r=e.target.closest("[data-open]"); if(r){ closeOverlays(); openIssue(+r.dataset.open); } });
+
+function dailyStack(){
+  const t=today(), days=[]; for(let k=41;k>=0;k--) days.push(addD(t,-k));
+  const data=days.map(d=>{ const by={}; PEOPLE.forEach(p=>by[p]=0); S.events.forEach(e=>{ if(e.type==="commit"&&e.ts.startsWith(d)) by[e.actor]++; }); return {d,by,tot:PEOPLE.reduce((a,p)=>a+by[p],0)}; });
+  const max=Math.max(4,...data.map(x=>x.tot)), yMax=Math.ceil(max/4)*4;
+  const W=640,H=220,L=28,B=22,TP=8, pw=(W-L)/days.length, bw=Math.max(4,pw-3), y=v=>TP+(H-TP-B)*(1-v/yMax);
+  let g=""; for(let k=0;k<=4;k++){ const v=yMax*k/4; g+=`<line class="grid" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`; }
+  let bars="";
+  data.forEach((x,k)=>{ let acc=0; const xx=L+k*pw+1.5;
+    PEOPLE.forEach(p=>{ const v=x.by[p]; if(!v) return; const y1=y(acc+v), y0=y(acc); bars+=`<rect x="${xx}" y="${y1}" width="${bw}" height="${Math.max(0,y0-y1-1.5)}" rx="1.5" style="fill:${mc(p)}"/>`; acc+=v; });
+    bars+=`<rect x="${L+k*pw}" y="${TP}" width="${pw}" height="${H-TP-B}" fill="transparent" data-tip="<b>${fmtL(x.d)}</b><br>${x.tot} commits<br>${PEOPLE.filter(p=>x.by[p]).map(p=>`<span style='color:${mc(p)}'>■</span> ${p} ${x.by[p]}`).join("<br>")}"/>`;
+    if(pd(x.d).getDay()===1) bars+=`<text x="${xx+bw/2}" y="${H-6}" text-anchor="middle">${fmt(x.d)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily commits stacked by member">${g}<line class="axis" x1="${L}" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>${bars}</svg>
+    <div class="lg" style="margin-top:8px">${PEOPLE.map(p=>`<span><i style="background:${mc(p)}"></i>${p}</span>`).join("")}</div>`;
+}
+
+/* =====================================================================
+   BOARD
+   ===================================================================== */
+function renderBoard(){
+  const keep=document.querySelector(".pane"); const sl=keep?keep.scrollLeft:0;
+  const cur=sprintAt(today());
+  const list=S.issues.filter(i=>(ui.boardMs==="all"||i.ms===+ui.boardMs||(ui.boardMs==="sprint"&&cur&&i.start<=cur.end&&i.end>=cur.start))&&(ui.boardWho==="all"||i.assignee===ui.boardWho));
+  let h=`<div class="toolbar">
+     <select class="sel" id="bMs"><option value="all">All milestones</option><option value="sprint" ${ui.boardMs==="sprint"?"selected":""}>Current sprint${cur?` (Sprint ${cur.n})`:""}</option>${S.milestones.map(m=>`<option value="${m.id}" ${String(ui.boardMs)===String(m.id)?"selected":""}>${esc(m.title)}</option>`).join("")}</select>
+     <select class="sel" id="bWho"><option value="all">Everyone</option>${ASSIGNEES.map(a=>`<option ${ui.boardWho===a?"selected":""}>${a}</option>`).join("")}</select>
+     <span class="hint">${list.length} issues · ${list.reduce((a,i)=>a+i.sp,0)} SP · drag cards between columns to change status</span></div>
+   <div class="pane"><div class="board">`;
+  for(const [key,label,color] of STATUSES){
+    const col=list.filter(i=>i.status===key).sort((a,b)=>a.end<b.end?-1:a.end>b.end?1:a.id-b.id);
+    h+=`<div class="bcol"><h3><span style="color:${color}">●</span>${label}<span class="pill" style="margin-left:auto">${col.reduce((a,i)=>a+i.sp,0)} SP</span><span class="cnt" style="margin-left:0">${col.length}</span></h3><div class="list" data-col="${key}">`;
+    if(!col.length) h+=`<div class="empty" style="padding:16px;font-size:12px">No issues</div>`;
+    for(const i of col){ const ms=msById(i.ms);
+      h+=`<div class="kcard" draggable="true" data-id="${i.id}" style="border-left-color:${mc(i.assignee)}">
+        <div class="ctop">${issueIcon(i)}<span>#${i.id}</span><span class="pill" style="color:${ms.color};border-color:color-mix(in srgb,${ms.color} 45%,transparent)">M${i.ms}</span>${i.tbd?`<span style="color:var(--warn);font-weight:600">TBD</span>`:""}${isLate(i)?`<span style="color:var(--danger);font-weight:600">Overdue</span>`:""}<span class="sp" style="margin-left:auto" title="Story points">${i.sp}</span></div>
+        <div class="cname">${esc(i.title)}</div>
+        <div class="cbot">${avatar(i.assignee)}${esc(i.assignee)}${i.labels.slice(0,2).map(labelHTML).join("")}<span style="margin-left:auto;color:var(--faint)" title="Due">${fmt(i.end)}</span></div></div>`; }
+    h+=`</div></div>`;
+  }
+  view.innerHTML=h+`</div></div>`;
+  document.querySelector(".pane").scrollLeft=sl;
+  $("bMs").onchange=e=>{ ui.boardMs=e.target.value; saveUI(); renderBoard(); };
+  $("bWho").onchange=e=>{ ui.boardWho=e.target.value; saveUI(); renderBoard(); };
+  let dragId=null;
+  view.querySelectorAll(".kcard").forEach(c=>{
+    c.addEventListener("dragstart",e=>{ dragId=+c.dataset.id; c.classList.add("drag"); e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",c.dataset.id); });
+    c.addEventListener("dragend",()=>c.classList.remove("drag"));
+    c.addEventListener("click",()=>openIssue(+c.dataset.id));
+  });
+  view.querySelectorAll(".list").forEach(l=>{
+    l.addEventListener("dragover",e=>{ e.preventDefault(); l.classList.add("dragover"); });
+    l.addEventListener("dragleave",()=>l.classList.remove("dragover"));
+    l.addEventListener("drop",e=>{ e.preventDefault(); l.classList.remove("dragover"); const i=byId(dragId); if(i&&i.status!==l.dataset.col){ setStatus(i,l.dataset.col); renderBoard(); toast(`#${i.id} → ${ST[i.status].label} · remember to Save`); } });
+  });
+}
+
+/* =====================================================================
+   ANALYTICS
+   ===================================================================== */
+function renderAnalytics(){
+  const s=stats();
+  const memRows=PEOPLE.concat("Team").map(p=>{
+    const mine=S.issues.filter(i=>i.assignee===p), ev=S.events.filter(e=>e.actor===p);
+    const done=mine.filter(i=>i.status==="done");
+    const onTime=done.filter(i=>i.closedAt&&i.closedAt<=i.end).length;
+    return {p, issues:mine.length, done:done.length, spDone:done.reduce((a,i)=>a+i.sp,0), spOpen:mine.filter(i=>i.status!=="done").reduce((a,i)=>a+i.sp,0),
+      active:mine.filter(i=>i.status==="progress"||i.status==="review").reduce((a,i)=>a+i.sp,0), commits:ev.filter(e=>e.type==="commit").length,
+      comments:ev.filter(e=>e.type==="comment").length, mrs:ev.filter(e=>e.type==="mr_merged").length, onTime:done.length?Math.round(onTime/done.length*100):null};
+  });
+  const sprintOpts=`<option value="sprint" ${ui.burn==="sprint"?"selected":""}>Current sprint${s.sp?` (Sprint ${s.sp.n})`:""}</option>`+S.milestones.map(m=>`<option value="ms${m.id}" ${ui.burn==="ms"+m.id?"selected":""}>${esc(m.title)}</option>`).join("");
+  const velo=velocity();
+  const avgV=velo.filter(v=>v.closed).length?Math.round(velo.reduce((a,v)=>a+v.completed,0)/velo.filter(v=>v.closed).length):0;
+  view.innerHTML=`<div class="pane"><div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+    <div class="kpis" style="padding:0">
+      <div class="kpi"><div class="k">Average velocity</div><div class="v">${avgV} SP</div><div class="s">per completed sprint</div></div>
+      <div class="kpi"><div class="k">Sprint ${s.sp?s.sp.n:""} progress</div><div class="v">${s.sprintDone} / ${s.sprintSp} SP</div><div class="s">${s.sprintIssues.length} issues due this sprint</div></div>
+      <div class="kpi"><div class="k">On-time delivery</div><div class="v">${(()=>{const d=S.issues.filter(i=>i.status==="done"&&i.closedAt);return d.length?Math.round(d.filter(i=>i.closedAt<=i.end).length/d.length*100):0;})()}%</div><div class="s">closed on or before due date</div></div>
+      <div class="kpi"><div class="k">Total commits</div><div class="v">${S.events.filter(e=>e.type==="commit").length}</div><div class="s">${S.events.filter(e=>e.type==="mr_merged").length} merge requests merged</div></div>
+      <div class="kpi"><div class="k">Remaining work</div><div class="v">${s.spTot-s.spDone} SP</div><div class="s">${s.all.length-s.done.length} open issues</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:16px">
+      <section class="card-p"><div class="card-h"><h3>Burndown</h3><span class="sub">Remaining story points</span><div style="flex:1"></div><select class="sel" id="burnSel">${sprintOpts}</select></div><div class="chart" style="padding:12px 14px" id="burn" data-chart="burn">${burndown()}</div></section>
+      <section class="card-p"><div class="card-h"><h3>Velocity</h3><span class="sub">Story points committed vs completed per sprint</span></div><div class="chart" style="padding:12px 14px">${velocityChart(velo)}</div></section>
+      <section class="card-p"><div class="card-h"><h3>Workload by member</h3><span class="sub">Story points by state</span></div><div class="chart" style="padding:12px 14px">${workload(memRows)}</div></section>
+      <section class="card-p"><div class="card-h"><h3>Issue status</h3><span class="sub">${S.issues.length} issues</span></div><div class="chart" style="padding:12px 14px">${statusDist()}</div></section>
+    </div>
+    <section class="card-p"><div class="card-h"><h3>Member contributions</h3><span class="sub">Since Sep 1, 2026</span></div><div style="overflow-x:auto">
+      <table class="tbl"><thead><tr><th>Member</th><th class="n">Issues</th><th class="n">Closed</th><th class="n">SP delivered</th><th class="n">SP in progress</th><th class="n">SP open</th><th class="n">Commits</th><th class="n">MRs merged</th><th class="n">Comments</th><th class="n">On time</th></tr></thead>
+      <tbody>${memRows.map(r=>`<tr><td><span style="display:inline-flex;align-items:center;gap:8px">${avatar(r.p)}<b>${r.p}</b></span></td><td class="n">${r.issues}</td><td class="n">${r.done}</td><td class="n"><b>${r.spDone}</b></td><td class="n">${r.active}</td><td class="n">${r.spOpen}</td><td class="n">${r.p==="Team"?"—":r.commits}</td><td class="n">${r.p==="Team"?"—":r.mrs}</td><td class="n">${r.p==="Team"?"—":r.comments}</td><td class="n">${r.onTime==null?"—":r.onTime+"%"}</td></tr>`).join("")}</tbody></table></div></section>
+  </div></div>`;
+  $("burnSel").onchange=e=>{ ui.burn=e.target.value; saveUI(); $("burn").innerHTML=burndown(); };
+  view.querySelectorAll(".pane .kpi, .pane .card-p").forEach(el=>{ el.classList.add("zoomable"); el.title="Click to enlarge"; });
+  view.querySelector(".pane").onclick=e=>{
+    if(e.target.closest("select,input,button,a,[data-open]")) return;
+    const card=e.target.closest(".zoomable"); if(card) openZoom(card);
+  };
+}
+function openZoom(card){
+  const c=card.cloneNode(true);
+  c.classList.remove("zoomable"); c.removeAttribute("title");
+  c.querySelectorAll("[id]").forEach(el=>el.removeAttribute("id"));
+  const h=c.querySelector(".card-h h3")||c.querySelector(".k");
+  $("zTitle").textContent=h?h.textContent:"";
+  if(c.querySelector(".card-h h3")) h.remove();
+  const sel=c.querySelector("select");
+  if(sel){ sel.value=ui.burn; sel.onchange=e=>{ ui.burn=e.target.value; saveUI(); c.querySelector('[data-chart="burn"]').innerHTML=burndown(); if($("burn")){ $("burn").innerHTML=burndown(); $("burnSel").value=ui.burn; } }; }
+  const body=$("zoomBody"); body.innerHTML=""; body.appendChild(c);
+  document.querySelector("#ovZoom .modal").style.maxWidth=c.classList.contains("kpi")?"560px":"";
+  $("ovZoom").classList.add("open");
+}
+function burndown(){
+  const t=today(); let scope, a, b, title;
+  if(ui.burn==="sprint"||!ui.burn.startsWith("ms")){ const sp=sprintAt(t)||S.sprints[0]; scope=S.issues.filter(i=>i.end>=sp.start&&i.end<=sp.end); a=sp.start; b=sp.end; title=`Sprint ${sp.n}`; }
+  else { const m=msById(+ui.burn.slice(2)); scope=S.issues.filter(i=>i.ms===m.id); if(!scope.length) return `<div class="empty">No issues in this milestone.</div>`; a=scope.reduce((x,i)=>i.start<x?i.start:x,scope[0].start); b=m.due||scope.reduce((x,i)=>i.end>x?i.end:x,scope[0].end); title=m.title; }
+  if(!scope.length) return `<div class="empty">No issues are due in this sprint.</div>`;
+  const total=scope.reduce((x,i)=>x+i.sp,0), n=diff(a,b);
+  const W=640,H=240,L=34,R=12,TP=10,B=24, x=k=>L+(W-L-R)*k/Math.max(1,n), y=v=>TP+(H-TP-B)*(1-v/total);
+  const pts=[]; for(let k=0;k<=n;k++){ const d=addD(a,k); if(d>t) break; const rem=total-scope.filter(i=>i.closedAt&&i.closedAt<=d).reduce((s,i)=>s+i.sp,0); pts.push({k,d,rem}); }
+  let g=""; for(let q=0;q<=4;q++){ const v=Math.round(total*q/4); g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`; }
+  const step=Math.max(1,Math.ceil(n/7)); for(let k=0;k<=n;k+=step) g+=`<text x="${x(k)}" y="${H-6}" text-anchor="middle">${fmt(addD(a,k))}</text>`;
+  const actual=pts.map((p,j)=>`${j?"L":"M"}${x(p.k)},${y(p.rem)}`).join("");
+  const last=pts[pts.length-1];
+  const hits=pts.map(p=>`<rect x="${x(p.k)-(W-L-R)/n/2}" y="${TP}" width="${(W-L-R)/Math.max(1,n)}" height="${H-TP-B}" fill="transparent" data-tip="<b>${fmtL(p.d)}</b><br>${p.rem} SP remaining<br>Ideal: ${Math.round(total*(1-p.k/n))} SP"/>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Burndown for ${esc(title)}">${g}
+    <line class="axis" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>
+    <line x1="${x(0)}" y1="${y(total)}" x2="${x(n)}" y2="${y(0)}" style="stroke:var(--faint);stroke-width:2;stroke-dasharray:5 5"/>
+    ${pts.length?`<path d="${actual}" fill="none" style="stroke:var(--accent);stroke-width:2.2" stroke-linejoin="round"/><circle cx="${x(last.k)}" cy="${y(last.rem)}" r="4.5" style="fill:var(--accent);stroke:var(--panel);stroke-width:2"/><text x="${x(last.k)+8}" y="${y(last.rem)-8}" style="fill:var(--text);font-weight:600">${last.rem} SP left</text>`:""}
+    ${hits}</svg>
+    <div class="lg" style="margin-top:8px"><span><i style="background:var(--accent)"></i>Actual remaining</span><span><i style="background:repeating-linear-gradient(90deg,var(--faint) 0 4px,transparent 4px 7px)"></i>Ideal</span><span>${esc(title)} · ${scope.length} issues · ${total} SP</span></div>`;
+}
+function velocity(){
+  const t=today();
+  return S.sprints.filter(sp=>sp.start<=t).map(sp=>({n:sp.n, closed:sp.end<t,
+    committed:S.issues.filter(i=>i.end>=sp.start&&i.end<=sp.end).reduce((a,i)=>a+i.sp,0),
+    completed:S.issues.filter(i=>i.closedAt&&i.closedAt>=sp.start&&i.closedAt<=sp.end).reduce((a,i)=>a+i.sp,0)}));
+}
+function velocityChart(v){
+  if(!v.length) return `<div class="empty">No sprints have started yet.</div>`;
+  const max=Math.max(10,...v.map(x=>Math.max(x.committed,x.completed))), yMax=Math.ceil(max/20)*20;
+  const W=640,H=240,L=34,B=24,TP=10, gw=(W-L)/v.length, bw=Math.min(28,(gw-14)/2), y=val=>TP+(H-TP-B)*(1-val/yMax);
+  let g=""; for(let q=0;q<=4;q++){ const val=yMax*q/4; g+=`<line class="grid" x1="${L}" x2="${W}" y1="${y(val)}" y2="${y(val)}"/><text x="${L-6}" y="${y(val)+4}" text-anchor="end">${val}</text>`; }
+  let bars="";
+  v.forEach((s,k)=>{ const cx=L+gw*k+gw/2;
+    const r=(xx,val,fill)=>{ const h=y(0)-y(val); return h>0?`<path d="M${xx},${y(0)} v${-(h-4)} q0,-4 4,-4 h${bw-8} q4,0 4,4 v${h-4}z" style="fill:${fill}"/>`:""; };
+    bars+=r(cx-bw-1,s.committed,"var(--faint)")+r(cx+1,s.completed,"var(--accent)");
+    bars+=`<text x="${cx}" y="${H-6}" text-anchor="middle">S${s.n}${s.closed?"":"*"}</text>`;
+    bars+=`<rect x="${cx-gw/2}" y="${TP}" width="${gw}" height="${H-TP-B}" fill="transparent" data-tip="<b>Sprint ${s.n}</b>${s.closed?"":" (in progress)"}<br>Committed ${s.committed} SP<br>Completed ${s.completed} SP"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Velocity per sprint">${g}<line class="axis" x1="${L}" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>${bars}</svg>
+    <div class="lg" style="margin-top:8px"><span><i style="background:var(--faint)"></i>Committed</span><span><i style="background:var(--accent)"></i>Completed</span><span>* sprint in progress</span></div>`;
+}
+function workload(rows){
+  const max=Math.max(1,...rows.map(r=>r.spDone+r.spOpen));
+  const W=640,rowH=34,L=70,R=60,H=rows.length*rowH+4, x=v=>(W-L-R)*v/max;
+  let h="";
+  rows.forEach((r,k)=>{ const yy=k*rowH+6; let acc=L;
+    const segs=[["Done",r.spDone,100],["In progress / review",r.active,60],["Not started",r.spOpen-r.active,28]];
+    h+=`<text x="${L-10}" y="${yy+15}" text-anchor="end" style="fill:var(--text);font-weight:600">${r.p}</text>`;
+    segs.forEach(([lab,v,o])=>{ if(!v) return; const w=x(v); h+=`<rect x="${acc}" y="${yy}" width="${Math.max(1,w-2)}" height="20" rx="3" style="fill:color-mix(in srgb,${mc(r.p)} ${o}%,var(--panel))" data-tip="<b>${r.p}</b> · ${lab}<br>${v} SP"/>`; acc+=w; });
+    h+=`<text x="${acc+6}" y="${yy+15}">${r.spDone}/${r.spDone+r.spOpen} SP</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Story points per member by state">${h}</svg>
+    <div class="lg" style="margin-top:8px"><span><i style="background:color-mix(in srgb,var(--muted) 100%,var(--panel))"></i>Done</span><span><i style="background:color-mix(in srgb,var(--muted) 60%,var(--panel))"></i>In progress / review</span><span><i style="background:color-mix(in srgb,var(--muted) 28%,var(--panel))"></i>Not started</span></div>`;
+}
+function statusDist(){
+  const tot=S.issues.length||1; let acc=0, segs="", rows="";
+  for(const [k,l,c] of STATUSES){ const n=S.issues.filter(i=>i.status===k).length, sp=S.issues.filter(i=>i.status===k).reduce((a,i)=>a+i.sp,0); const w=n/tot*100;
+    if(n) segs+=`<div style="width:calc(${w}% - 2px);background:${c};height:100%;border-radius:3px" data-tip="<b>${l}</b><br>${n} issues · ${sp} SP"></div>`;
+    rows+=`<tr><td><span style="color:${c}">●</span> ${l}</td><td class="n">${n}</td><td class="n">${sp} SP</td><td class="n">${Math.round(w)}%</td></tr>`; acc+=w; }
+  return `<div style="display:flex;gap:2px;height:22px;margin:6px 0 14px">${segs}</div><table class="tbl"><tbody>${rows}</tbody></table>`;
+}
+
+/* =====================================================================
+   WIRING
+   ===================================================================== */
+function applyTheme(){ const th=ui.theme||"dark"; document.documentElement.dataset.theme=th; }
+document.getElementById("tabs").onclick=e=>{ const b=e.target.closest(".tab"); if(!b) return; ui.view=b.dataset.view; saveUI(); render(); };
+$("viewer").onchange=e=>{ ui.viewer=e.target.value; saveUI(); toast(`Edits will be recorded as ${esc(ui.viewer)}`); };
+document.querySelector(".menu-pop").addEventListener("click",e=>{ if(e.target.closest("button")) e.currentTarget.closest("details").open=false; });
+document.addEventListener("click",e=>{ const m=document.querySelector("details.menu"); if(m.open&&!e.target.closest("details.menu")) m.open=false; });
+$("btnSave").onclick=persist;
+$("mSave").onclick=saveIssue; $("mDelete").onclick=deleteIssue; $("sSave").onclick=saveSprint;
+$("fMs").onchange=e=>fillObj(e.target.value,null);
+$("fStart").onchange=()=>{ if($("fEnd").value<$("fStart").value) $("fEnd").value=$("fStart").value; sprintHint(); };
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeOverlays);
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("mousedown",e=>{ if(e.target===o) closeOverlays(); }));
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape") closeOverlays();
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){ e.preventDefault(); persist(); }
+});
+$("btnTheme").onclick=()=>{ ui.theme=document.documentElement.dataset.theme==="light"?"dark":"light"; saveUI(); applyTheme(); };
+$("btnExport").onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`project-dashboard-${iso(new Date())}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); };
+$("btnImport").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.issues||!d.milestones||!d.sprints) throw new Error("missing issues, milestones or sprints"); S=d; applyMembers(); markDirty(); render(); toast("Imported · click Save to keep"); }catch(err){ alert("Could not import: "+err.message); } };
+  r.readAsText(f); e.target.value=""; };
+$("btnClear").onclick=()=>{
+  if(!confirm("Clear ALL data?\n\nThis removes every issue, objective, milestone and activity event so you can start from a blank project. The 2-week sprint calendar is kept.\n\nTip: use Export JSON first if you want a backup. You can bring the mock data back with Reset to mock data.")) return;
+  S={asOf:iso(new Date()), source:"empty", project:S.project, members:S.members, milestones:[], objectives:[], sprints:S.sprints, issues:[], events:[], nextEventId:1};
+  ui.q=""; ui.hidden=[]; ui.hmDay=null; ui.collapsed=[]; ui.boardMs="all"; saveUI();
+  persist(); status("Blank project"); render(); toast("All data cleared");
+};
+$("btnReset").onclick=async()=>{
+  const c=activeConn();
+  if(!confirm(c ? `Discard local changes and reload the latest data from ${PROVIDER_NAME[c.provider]}?` : "Discard all local changes and reload the original mock data?")) return;
+  try{ localStorage.removeItem(dataKey()); }catch(e){}
+  try{ await openProject(c,true); }catch(err){ status(); openConnect(c,err.message); }
+};
+window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+
+/* ---------- switching projects ---------- */
+// Opens a project (c = null for the demo). Uses this browser's saved copy unless `fresh`, otherwise fetches it.
+async function openProject(c,fresh){
+  const saved=fresh?null:readJSON(dataKeyFor(c));
+  let data=saved&&saved.issues?saved:null;
+  if(!data){
+    if(c) $("statusLine").innerHTML=`Loading ${esc(c.name)} from ${PROVIDER_NAME[c.provider]}…`;
+    data=await fetchProject(c);
+  }
+  const switching=(c?connKey(c):null)!==conns.active;
+  conns.active=c?connKey(c):null;
+  if(c){ c.lastOpened=Date.now(); rememberConn(c); }
+  saveConns();
+  S=data; dirty=false; applyMembers();
+  if(switching){
+    Object.assign(ui,{q:"", hidden:[], hmDay:null, collapsed:[], boardMs:"all", boardWho:"all", feedMember:"all", hmMember:"all"});
+    renderOverview._did=false;   // scroll the new timeline to today
+  }
+  saveUI();
+  const time=d=>new Date(d).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+  lastStatus = data===saved ? `Saved copy${S.savedAt?" from "+time(S.savedAt):""}`
+    : c ? `Live from ${PROVIDER_NAME[c.provider]} · ${time(Date.now())}` : `Mock data · snapshot ${fmt(S.asOf)}`;
+  $("btnReset").textContent = c ? `Reload from ${PROVIDER_NAME[c.provider]}` : "Reset to mock data";
+  status(); render(); renderRecent();
+}
+async function switchTo(c){
+  if(dirty&&!confirm("You have unsaved changes. Switch projects and lose them?")) return;
+  try{ await openProject(c,false); toast(`Opened ${esc(c?c.name:"demo project")}`); }
+  catch(err){ status(); openConnect(c,err.message); }
+}
+function renderRecent(){
+  const row=(key,name,sub)=>`<button class="proj" data-proj="${esc(key)}"><span class="ck">${key===(conns.active||"")?"✓":""}</span><span>${esc(name)}<small>${esc(sub)}</small></span></button>`;
+  $("recentList").innerHTML = conns.recent.map(c=>row(connKey(c),c.name,`${PROVIDER_NAME[c.provider]} · ${c.project}`)).join("")
+    + row("","Demo project","Sample data · Nimbus");
+}
+$("recentList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-proj]"); if(!b||b.dataset.proj===(conns.active||"")) return;
+  switchTo(conns.recent.find(c=>connKey(c)===b.dataset.proj)||null);
+});
+
+/* ---------- connect popup ---------- */
+// Accepts a browser link, a clone URL (https or git@) or "owner/repo".
+function parseProjectUrl(s,fallback){
+  s=s.trim().replace(/\.git$/,"").replace(/\/+$/,"");
+  const ssh=s.match(/^git@([^:]+):(.+)$/); if(ssh) s=`https://${ssh[1]}/${ssh[2]}`;
+  if(!/^https?:\/\//i.test(s)) s = /^[\w.-]+(\/[\w.-]+)+$/.test(s) && !/^[\w-]+\.[\w.-]+\//.test(s) ? `https://${fallback==="gitlab"?"gitlab.com":"github.com"}/${s}` : "https://"+s;
+  let u; try{ u=new URL(s); }catch(e){ return null; }
+  const h=u.hostname.toLowerCase();
+  const provider = h==="github.com"||h.startsWith("github.") ? "github" : h.includes("gitlab") ? "gitlab" : fallback;
+  let path=u.pathname.replace(/^\/+|\/+$/g,"").split("/-/")[0];     // drop GitLab sub-pages like /-/issues
+  if(provider==="github") path=path.split("/").slice(0,2).join("/"); // drop GitHub sub-pages like /issues
+  if(path.split("/").length<2) return null;
+  return {provider, host:`${u.protocol}//${u.host}`, project:decodeURIComponent(path)};
+}
+function tokenHelp(provider,host){
+  if(provider==="gitlab"){
+    const base=host||"https://gitlab.com";
+    return `<details class="tokhelp"><summary>What's a token, and how do I get one?</summary>
+      <p>A token is a password made just for this dashboard. It lets the page <b>read</b> your project's issues, milestones and commits. With the steps below it can't change anything.</p>
+      <p><b>Do I need one?</b> Public projects work without one. Private projects (most class projects) need one.</p>
+      <ol>
+        <li><a href="${esc(base)}/-/user_settings/personal_access_tokens?name=UIW-PMD%20dashboard&scopes=read_api" target="_blank" rel="noopener">Open GitLab's new token page</a> and sign in if asked. The name and permission are filled in for you.</li>
+        <li><b>Expiration date:</b> pick a date after your semester ends.</li>
+        <li><b>Scopes:</b> make sure only <b>read_api</b> is ticked.</li>
+        <li>Click <b>Create personal access token</b>.</li>
+        <li>Copy the token (it starts with <code>glpat-</code>) and paste it in the box above. GitLab shows it <b>only once</b>, so paste it before leaving the page.</li>
+      </ol>
+      <p class="hint">Keep it secret: don't put it in your code, a commit or a chat. If it leaks, revoke it on the same page and make a new one. The dashboard keeps it encrypted in this browser, deletes it when the time you chose runs out, and sends it only to ${esc(new URL(base).host)}.</p>
+    </details>`;
+  }
+  const base=host&&host!=="https://github.com"?host:"https://github.com";
+  return `<details class="tokhelp"><summary>What's a token, and how do I get one?</summary>
+    <p>A token is a password made just for this dashboard. It lets the page <b>read</b> your repository's issues, milestones and commits. With the steps below it can't change anything.</p>
+    <p><b>Do I need one?</b> Private repos need one. Public repos work without one, but GitHub then allows only 60 requests an hour, so a token is still recommended.</p>
+    <ol>
+      <li><a href="${esc(base)}/settings/personal-access-tokens/new" target="_blank" rel="noopener">Open GitHub's new token page</a> and sign in if asked.</li>
+      <li><b>Token name:</b> <code>UIW-PMD dashboard</code>. <b>Expiration:</b> a date after your semester ends.</li>
+      <li><b>Resource owner:</b> whoever owns the repo, you or your team/class organization.</li>
+      <li><b>Repository access:</b> choose <b>Only select repositories</b> and pick your project.</li>
+      <li><b>Permissions → Repository permissions:</b> set <b>Contents</b>, <b>Issues</b> and <b>Pull requests</b> to <b>Read-only</b>.</li>
+      <li>Click <b>Generate token</b>, copy it (it starts with <code>github_pat_</code>) and paste it in the box above. GitHub shows it <b>only once</b>.</li>
+    </ol>
+    <p class="hint">Organization not listed, or the token says it's waiting for approval? Ask your instructor or the organization owner to approve it. As a fallback, a <a href="${esc(base)}/settings/tokens/new?description=UIW-PMD%20dashboard&scopes=repo" target="_blank" rel="noopener">classic token</a> with the <b>repo</b> scope also works.</p>
+    <p class="hint">Keep it secret: don't put it in your code, a commit or a chat. If it leaks, delete it on the same page and make a new one. The dashboard keeps it encrypted in this browser, deletes it when the time you chose runs out, and sends it only to GitHub.</p>
+  </details>`;
+}
+let helpFor=null, connEditing=null;
+function connFormChanged(){
+  const sel=$("cProvider");
+  const p=parseProjectUrl($("cUrl").value,sel.value);
+  if(p&&!sel.dataset.manual) sel.value=p.provider;
+  // pointing an edited connection at a different project: don't carry its old name over
+  if(connEditing&&p&&connKey(p)!==connKey(connEditing)&&$("cName").value===connEditing.name) $("cName").value="";
+  const provider=sel.value, host=p&&p.provider===provider?p.host:null;
+  $("cTokOpt").textContent = provider==="github" ? "(needed for private repos, recommended for all)" : "(needed for private projects)";
+  if(!(connEditing&&tokenInfo(connEditing))) $("cToken").placeholder = provider==="github" ? "github_pat_…" : "glpat-…";
+  if(helpFor!==provider+host){ helpFor=provider+host; $("cHelp").innerHTML=tokenHelp(provider,host); }
+}
+function showConnErr(msg){ $("cErr").hidden=!msg; $("cErr").textContent=msg||""; if(msg) $("cHelp").querySelector("details").open=/token/i.test(msg); }
+const fmtWhen = ms => new Date(ms).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+function tokenLabel(c){ const t=tokenInfo(c); return !t ? "" : t.tab ? "token for this tab only" : `token kept until ${fmtWhen(t.exp)}`; }
+function renderSaved(){
+  const anyToken=conns.recent.some(c=>tokenInfo(c));
+  $("cSaved").innerHTML = conns.recent.length ? `<h4>Saved projects</h4>` + conns.recent.map(c=>`<div class="saved-row">
+      <span class="nm"><b>${esc(c.name)}</b> <span class="hint">${[PROVIDER_NAME[c.provider], esc(c.project), tokenLabel(c), connKey(c)===conns.active?"open now":""].filter(Boolean).join(" · ")}</span></span>
+      <button class="btn sm" data-edit="${esc(connKey(c))}">Edit</button><button class="btn sm" data-forget="${esc(connKey(c))}">Remove</button></div>`).join("")
+    + (anyToken ? `<div style="margin-top:8px"><button class="btn sm" id="cForgetAll" title="Use this before leaving a shared computer">Forget all tokens on this computer</button></div>` : "") : "";
+}
+function renderTokState(c){
+  const t=c&&tokenInfo(c);
+  $("cTokState").innerHTML = t ? `A token is saved for this project (${tokenLabel(c)}). Leave the box empty to keep using it. <a href="#" id="cForgetTok">Forget it</a>` : "";
+  $("cToken").value="";
+  $("cToken").placeholder = t ? "•••••••• saved · paste a new token to replace it" : $("cProvider").value==="github" ? "github_pat_…" : "glpat-…";
+}
+function openConnect(c,err){
+  connEditing=c||null;
+  $("cTitle").textContent = c ? "Edit project connection" : "Connect a project";
+  $("cUrl").value = c ? `${c.host}/${c.project}` : "";
+  $("cProvider").value = c ? c.provider : "github"; delete $("cProvider").dataset.manual;
+  $("cName").value = c ? c.name : "";
+  const t=c&&tokenInfo(c);
+  $("cTtl").value = t&&t.tab ? "tab" : "7"; delete $("cTtl").dataset.changed;
+  helpFor=null; connFormChanged(); renderTokState(c); showConnErr(err); renderSaved();
+  $("ovConn").classList.add("open"); setTimeout(()=>$("cUrl").focus(),50);
+}
+$("btnConnect").onclick=()=>openConnect(null);
+$("cUrl").addEventListener("input",connFormChanged);
+$("cProvider").addEventListener("change",e=>{ e.target.dataset.manual="1"; connFormChanged(); });
+["cUrl","cName","cToken"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("cGo").click(); } }));
+$("cTtl").addEventListener("change",e=>{ e.target.dataset.changed="1"; });
+$("cTokState").addEventListener("click",e=>{
+  if(e.target.id!=="cForgetTok") return; e.preventDefault();
+  forgetToken(connEditing); renderTokState(connEditing); renderSaved(); toast("Token forgotten on this computer");
+});
+$("cSaved").addEventListener("click",async e=>{
+  if(e.target.id==="cForgetAll"){
+    if(!confirm("Forget every saved token on this computer?\n\nYour projects stay in the list; you'll paste a token again the next time you open a private one.")) return;
+    await forgetAllTokens(); renderTokState(connEditing); renderSaved(); toast("All tokens forgotten on this computer"); return;
+  }
+  const ed=e.target.closest("[data-edit]"), fg=e.target.closest("[data-forget]");
+  if(ed) openConnect(conns.recent.find(c=>connKey(c)===ed.dataset.edit));
+  if(fg){
+    const c=conns.recent.find(x=>connKey(x)===fg.dataset.forget);
+    if(!confirm(`Remove ${c.name} from your projects?\n\nIts token and saved copy are deleted from this browser. Nothing changes on ${PROVIDER_NAME[c.provider]}.`)) return;
+    try{ localStorage.removeItem(dataKeyFor(c)); }catch(err){}
+    forgetToken(c); conns.recent=conns.recent.filter(x=>x!==c);
+    if(conns.active===connKey(c)){ closeOverlays(); dirty=false; openProject(null,false); } else { saveConns(); renderSaved(); renderRecent(); }
+  }
+});
+$("cGo").onclick=async()=>{
+  const sel=$("cProvider");
+  const p=parseProjectUrl($("cUrl").value,sel.value);
+  if(!p) return showConnErr("Paste the full link to your project, for example https://github.com/owner/repo");
+  if(sel.dataset.manual) p.provider=sel.value;
+  const typed=$("cToken").value.trim(), ttl=$("cTtl").value==="tab"?"tab":+$("cTtl").value;
+  const c=Object.assign(p,{name:$("cName").value.trim()||p.project.split("/").pop()});
+  const hasSaved=!!readJSON(dataKeyFor(c));
+  if(hasSaved&&!confirm(`Load the latest data for ${c.name}?\n\nThis replaces the copy saved in this browser, including any local edits.`)) return;
+  if(dirty&&conns.active!==connKey(c)&&!confirm("You have unsaved changes. Switch projects and lose them?")) return;
+  const btn=$("cGo"); btn.disabled=true; btn.textContent="Connecting…"; showConnErr("");
+  // store the token: a newly pasted one, or the existing one moved to a new link or a new "keep for" choice
+  const prev=connEditing, moved=prev&&connKey(prev)!==connKey(c);
+  const keep=!typed&&prev&&(moved||$("cTtl").dataset.changed) ? await getToken(prev) : "";
+  if(typed||keep) await saveToken(c,typed||keep,ttl);
+  if(moved&&(typed||keep)) forgetToken(prev);
+  try{
+    await openProject(c,true);
+    if(connEditing&&connKey(connEditing)!==connKey(c)){ conns.recent=conns.recent.filter(x=>x!==connEditing); saveConns(); renderRecent(); }
+    if(hasSaved) try{ localStorage.removeItem(dataKeyFor(c)); }catch(e){}
+    closeOverlays(); toast(`✓ Connected to ${esc(c.name)}`);
+  }catch(err){
+    if(!conns.recent.some(x=>connKey(x)===connKey(c))) forgetToken(c);   // don't keep tokens for projects that never connected
+    showConnErr(err.message); status();
+  }
+  finally{ btn.disabled=false; btn.textContent="Connect"; }
+};
+
+(async function init(){
+  applyTheme();
+  // earlier builds kept tokens in plain text: encrypt them and remove the plain copies
+  for(const c of conns.recent) if(c.token){ await saveToken(c,c.token,7); delete c.token; }
+  saveConns();
+  try{ Object.keys(sessionStorage).filter(k=>k.startsWith("pm_dashboard_token:")).forEach(k=>sessionStorage.removeItem(k)); }catch(e){}
+  purgeExpiredTokens();
+  const c=activeConn() || {provider:"github",host:"https://github.com",project:"QuinnRana/operation-secure-login",name:"Operation Secure Login"};
+  try{ await openProject(c,true); }
+  catch(err){
+    document.getElementById("projectProgress").textContent="Project data could not be loaded. Completion is unavailable until you connect or retry.";
+    openConnect(c,`Couldn't load ${c.name}: ${err.message}`);
+  }
+})();
+</script>
+</body>
+</html>
