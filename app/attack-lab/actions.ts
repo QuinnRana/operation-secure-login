@@ -9,6 +9,15 @@ export type AttackState = {
   records: LabRecord[];
   query?: string;
 };
+export type ResetState = { status: 'idle' | 'error' | 'success'; message: string };
+
+const unavailableMessage = 'The isolated Attack Lab database is unavailable.';
+
+// Never fall back to the secure login database, including for seed writes.
+function isolatedLabDb() {
+  const labDb = env.LAB_DB;
+  return labDb && labDb !== env.DB ? labDb : null;
+}
 
 async function prepareLab(labDb: D1Database) {
   await labDb.prepare(`
@@ -45,11 +54,8 @@ export async function vulnerableLogin(
   const password = formText(formData, 'password');
   if (!username || !password) return { status: 'error', message: 'Enter both fields.', records: [] };
 
-  // Never fall back to the secure login database, including for seed writes.
-  const labDb = env.LAB_DB;
-  if (!labDb || labDb === env.DB) {
-    return { status: 'error', message: 'The isolated Attack Lab database is unavailable.', records: [] };
-  }
+  const labDb = isolatedLabDb();
+  if (!labDb) return { status: 'error', message: unavailableMessage, records: [] };
 
   await prepareLab(labDb);
 
@@ -79,4 +85,18 @@ export async function vulnerableLogin(
   } catch {
     return { status: 'error', message: 'The database rejected that input. Check the lab instructions and try again.', records: [], query };
   }
+}
+
+// Restores the fictional seed records. Only the lab table in LAB_DB is touched.
+export async function resetLab(): Promise<ResetState> {
+  const labDb = isolatedLabDb();
+  if (!labDb) return { status: 'error', message: unavailableMessage };
+
+  try {
+    await labDb.prepare('DROP TABLE IF EXISTS lab_accounts').run();
+    await prepareLab(labDb);
+  } catch {
+    return { status: 'error', message: 'The lab reset failed. Restart the local server and try again.' };
+  }
+  return { status: 'success', message: 'Lab data reset to the 3 fictional seed records.' };
 }

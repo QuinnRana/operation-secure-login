@@ -1,23 +1,25 @@
 'use client';
 
 import { useActionState } from 'react';
-import { DatabaseZap, FlaskConical, LoaderCircle, TriangleAlert } from 'lucide-react';
+import { DatabaseZap, FlaskConical, LoaderCircle, RotateCcw, TriangleAlert } from 'lucide-react';
 
-import { type AttackState, vulnerableLogin } from '@/app/attack-lab/actions';
+import { type AttackState, type ResetState, resetLab, vulnerableLogin } from '@/app/attack-lab/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const initialState: AttackState = { status: 'idle', message: '', records: [] };
+const initialResetState: ResetState = { status: 'idle', message: '' };
 
 export function AttackForm() {
   const [state, formAction, pending] = useActionState(vulnerableLogin, initialState);
+  const [resetState, resetAction, resetting] = useActionState(resetLab, initialResetState);
 
   return (
     <div className="space-y-6">
       <form action={formAction} className="space-y-4">
         <div className="space-y-2"><label htmlFor="lab-username" className="text-sm font-medium">Username input</label><Input id="lab-username" name="username" placeholder="Try the provided payload" className="h-11 font-mono" required /></div>
         <div className="space-y-2"><label htmlFor="lab-password" className="text-sm font-medium">Password input</label><Input id="lab-password" name="password" type="text" placeholder="Any non-empty value" className="h-11 font-mono" required /></div>
-        <Button type="submit" disabled={pending} className="h-11 w-full bg-amber-400 text-slate-950 hover:bg-amber-300">
+        <Button type="submit" disabled={pending || resetting} className="h-11 w-full bg-amber-400 text-slate-950 hover:bg-amber-300">
           {pending ? <><LoaderCircle className="animate-spin" />Running lab test…</> : <><FlaskConical />Test vulnerable login</>}
         </Button>
       </form>
@@ -40,6 +42,16 @@ export function AttackForm() {
           ))}
         </div>
       )}
+
+      <form action={resetAction} className="space-y-3 border-t border-white/10 pt-5">
+        <p className="text-xs leading-5 text-slate-400">Save any evidence first. Reset discards changed lab rows and restores the 3 fictional records in the separate lab database. The secure login database is never touched.</p>
+        <Button type="submit" variant="outline" disabled={resetting || pending} className="h-10 w-full">
+          {resetting ? <><LoaderCircle className="animate-spin" />Resetting lab data…</> : <><RotateCcw />Reset lab data</>}
+        </Button>
+        {resetState.status !== 'idle' && (
+          <output className={`block text-sm ${resetState.status === 'success' ? 'text-emerald-300' : 'text-red-300'}`}>{resetState.message}</output>
+        )}
+      </form>
     </div>
   );
 }
