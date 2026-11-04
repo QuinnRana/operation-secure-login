@@ -9,6 +9,10 @@ const bundle = await build({
     import { login } from './app/actions';
     import { vulnerableLogin } from './app/attack-lab/actions';
     import { hashPassword } from './lib/password';
+    // Match production's Web Crypto limit even when local workerd permits more.
+    Object.defineProperty(crypto.subtle, 'deriveBits', { value: () => {
+      throw new DOMException('PBKDF2 iteration counts above 100000 are not supported', 'NotSupportedError');
+    }});
     export default { async fetch(request) {
       const path = new URL(request.url).pathname;
       if (path === '/hash') return Response.json(await hashPassword('päss🔒word', 'fixture-salt'));
