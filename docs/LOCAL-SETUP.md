@@ -21,7 +21,7 @@ pnpm dev --host 127.0.0.1
 
 Open the local URL printed by the server. Open both `/` and `/attack-lab` at that same address. Keep this terminal running; Ctrl+C stops the server.
 
-The checked-in `.openai/hosting.json` supplies the `DB` binding name. Local development uses Cloudflare's local D1-compatible storage in `.wrangler/`; it does not require connecting to the hosted database. Tables and fictional demo records are initialized when their login actions first run, not simply when a page is opened. Both sets of tables currently share a database binding; separate database isolation is tracked in issue #5.
+The checked-in `.openai/hosting.json` supplies the `DB` binding name. Local development uses Cloudflare's local D1-compatible storage in `.wrangler/`; it does not require connecting to the hosted database. Tables and fictional demo records are initialized when their login actions first run, not simply when a page is opened. Local development now gives the Attack Lab a separate `LAB_DB` binding and database identity. The secure `DB` identity is unchanged. See [database isolation](DATABASE-ISOLATION.md) for the boundary and deployment limitations.
 
 ## Startup checks
 

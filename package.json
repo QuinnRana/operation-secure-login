@@ -10,6 +10,7 @@
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
+    "test:isolation": "node --test tests/database-isolation.test.mjs",
     "format": "oxfmt",
     "db:generate": "drizzle-kit generate"
   },
