@@ -46,3 +46,8 @@ See the [project Wiki](https://github.com/QuinnRana/operation-secure-login/wiki)
 ## Database isolation
 
 See [database isolation](docs/DATABASE-ISOLATION.md) for local behavior, regression checks, and deployment requirements.
+## Secure login input checks
+
+The secure server action requires exactly one text username and password. It rejects file uploads, duplicate credential fields, usernames longer than 256 UTF-16 code units, and passwords longer than 1,024 code units before database or hashing work. Limits apply to raw input, so excessive padding is rejected. Username edges are trimmed; passwords are never trimmed, truncated, or Unicode-normalized. Other form keys remain permitted for framework metadata.
+
+Run `pnpm test:login` with Node 22.13+ for disposable SQLite-backed server-action regression tests. These limits bound application processing after form parsing; they are not request-body limits or rate limiting. The intentionally vulnerable Attack Lab is unchanged. This is a success-message authentication demo, not a session system.

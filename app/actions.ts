@@ -33,8 +33,17 @@ export async function login(
   _previousState: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const username = String(formData.get('username') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
+  const usernames = formData.getAll('username');
+  const passwords = formData.getAll('password');
+  // Bound raw strings before trimming, encoding, hashing, or database work.
+  // Ignore unrelated fields, including framework server-action metadata.
+  if (usernames.length !== 1 || passwords.length !== 1 ||
+      typeof usernames[0] !== 'string' || typeof passwords[0] !== 'string' ||
+      usernames[0].length > 256 || passwords[0].length > 1024) {
+    return { status: 'error', message: 'Enter one valid username and password within the supported lengths.' };
+  }
+  const username = usernames[0].trim();
+  const password = passwords[0];
 
   if (!username || !password) {
     return { status: 'error', message: 'Enter both a username and password.' };
