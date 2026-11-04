@@ -19,8 +19,9 @@ function isolatedLabDb() {
   return labDb && labDb !== env.DB ? labDb : null;
 }
 
-async function prepareLab(labDb: D1Database) {
-  await labDb.prepare(`
+async function prepareLab(labDb: D1Database, reset = false) {
+  // D1 batches are transactions: no caller can observe a half-reset table.
+  const create = labDb.prepare(`
     CREATE TABLE IF NOT EXISTS lab_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL,
@@ -29,16 +30,24 @@ async function prepareLab(labDb: D1Database) {
       role TEXT NOT NULL,
       private_note TEXT NOT NULL
     )
-  `).run();
-
-  const existing = await labDb.prepare('SELECT id FROM lab_accounts LIMIT 1').first();
-  if (!existing) {
-    await labDb.batch([
-      labDb.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('alex', 'falcon7', 'Alex Morgan', 'Finance Intern', 'Training record: invoice review due Friday.'),
-      labDb.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('jamie', 'spring22', 'Jamie Lee', 'Help Desk', 'Training record: temporary badge 1042.'),
-      labDb.prepare('INSERT INTO lab_accounts (username, password, display_name, role, private_note) VALUES (?, ?, ?, ?, ?)').bind('casey', 'welcome1', 'Casey Rivera', 'Operations', 'Training record: vendor meeting moved to 3 PM.'),
-    ]);
-  }
+  `);
+  // Test emptiness and insert all three rows in one statement. A separate
+  // SELECT followed by inserts races with both first logins and resets.
+  const seed = labDb.prepare(`
+    INSERT INTO lab_accounts (username, password, display_name, role, private_note)
+    SELECT column1, column2, column3, column4, column5
+    FROM (VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?))
+    WHERE NOT EXISTS (SELECT 1 FROM lab_accounts)
+  `).bind(
+    'alex', 'falcon7', 'Alex Morgan', 'Finance Intern', 'Training record: invoice review due Friday.',
+    'jamie', 'spring22', 'Jamie Lee', 'Help Desk', 'Training record: temporary badge 1042.',
+    'casey', 'welcome1', 'Casey Rivera', 'Operations', 'Training record: vendor meeting moved to 3 PM.',
+  );
+  await labDb.batch([
+    ...(reset ? [labDb.prepare('DROP TABLE IF EXISTS lab_accounts')] : []),
+    create,
+    seed,
+  ]);
 }
 
 function formText(formData: FormData, name: string) {
@@ -93,8 +102,7 @@ export async function resetLab(): Promise<ResetState> {
   if (!labDb) return { status: 'error', message: unavailableMessage };
 
   try {
-    await labDb.prepare('DROP TABLE IF EXISTS lab_accounts').run();
-    await prepareLab(labDb);
+    await prepareLab(labDb, true);
   } catch {
     return { status: 'error', message: 'The lab reset failed. Restart the local server and try again.' };
   }

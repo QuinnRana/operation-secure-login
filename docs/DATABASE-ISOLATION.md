@@ -25,7 +25,7 @@ Locally, both bindings come from `db/local-bindings.ts` through `vite.config.ts`
 
 ## Resetting the lab
 
-Use the **Reset lab data** button at the bottom of `/attack-lab` before each recorded demonstration, or whenever lab rows look wrong. It restores the three fictional records with IDs 1–3, works even if the lab has never been used, and can be repeated safely. Save any evidence you need before resetting, because changed lab rows are discarded. The lab and reset buttons are disabled while the other one is running; if a lab query from another browser tab overlaps a reset and you see more than three records, reset again.
+Use the **Reset lab data** button at the bottom of `/attack-lab` before each recorded demonstration, or whenever lab rows look wrong. It restores the three fictional records with IDs 1–3, works even if the lab has never been used, and can be repeated safely. Save any evidence you need before resetting, because changed lab rows are discarded. The lab and reset buttons are disabled while the other one is running. Server-side reset uses a single D1 transaction for drop, create and seed. First-use initialization also creates and conditionally seeds within one transaction, so concurrent resets and logins cannot duplicate the seed or observe a half-reset table. If any reset statement fails, the previous lab schema and rows are retained; the action returns an error and can be retried.
 
 The reset never touches the secure login database: the `users` table, the `student` account, and any other `DB` data stay as they were. In production builds there is no `LAB_DB`, so the reset returns the same "unavailable" error as the lab login and writes nothing.
 
@@ -50,5 +50,7 @@ No database is provisioned, no credentials are created, and no deployment is per
 ## Regression checks
 
 Run `pnpm test:isolation` (Node 22.13+). Tests execute the actual TypeScript server actions using disposable in-memory SQLite adapters for the D1 API. They cover secure login success/failure, legitimate lab login, the classroom bypass, cross-table and schema probes, fail-closed bindings, lab reset (seed restored, secure `users` rows unchanged), and local/build configuration. They do not connect to a hosted database. Node may print an experimental SQLite warning on supported older versions.
+
+Run `node --test tests/lab-reset.test.mjs` for disposable Workers/D1 concurrency, rollback and missing-binding checks. It covers ten simultaneous resets, overlapping first logins, reset/login overlap, failed-batch rollback, and preservation of unrelated lab and secure data.
 
 Run `pnpm lint` and `pnpm build` separately; record any pre-existing failures. The intentionally vulnerable baseline remains in Git history and in the local lab for the class evidence workflow.
