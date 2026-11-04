@@ -50,7 +50,7 @@ function form(username, password) {
 
 const idle = { status: 'idle', message: '', records: [] };
 
-test('malformed and oversized credentials are rejected before DB access', async () => {
+await test('malformed and oversized credentials are rejected before DB access', async () => {
   const env = { DB: { prepare() { assert.fail('invalid input reached database work'); } } };
   const { login } = loadSource('app/actions.ts', env);
   const malformed = [new FormData(), form('', ''), form('   ', 'password'),
@@ -72,7 +72,7 @@ test('malformed and oversized credentials are rejected before DB access', async 
   }
 });
 
-test('valid credentials, trimming, exact password bytes, and parameterized queries remain intact', async (t) => {
+await test('valid credentials, trimming, exact password bytes, and parameterized queries remain intact', async (t) => {
   const secure = database();
   t.after(() => secure.sqlite.close());
   const env = { DB: secure.binding };

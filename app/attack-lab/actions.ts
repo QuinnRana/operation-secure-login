@@ -36,8 +36,10 @@ export async function vulnerableLogin(
   _previousState: AttackState,
   formData: FormData,
 ): Promise<AttackState> {
-  const username = String(formData.get('username') ?? '');
-  const password = String(formData.get('password') ?? '');
+  const usernameValue = formData.get('username');
+  const passwordValue = formData.get('password');
+  const username = typeof usernameValue === 'string' ? usernameValue : '';
+  const password = typeof passwordValue === 'string' ? passwordValue : '';
   if (!username || !password) return { status: 'error', message: 'Enter both fields.', records: [] };
 
   // Never fall back to the secure login database, including for seed writes.

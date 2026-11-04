@@ -99,6 +99,12 @@ importers:
       drizzle-kit:
         specifier: 0.31.10
         version: 0.31.10
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      miniflare:
+        specifier: 4.20260515.0
+        version: 4.20260515.0
       oxfmt:
         specifier: 0.61.0
         version: 0.61.0

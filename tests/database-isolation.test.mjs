@@ -50,7 +50,7 @@ function form(username, password) {
 
 const idle = { status: 'idle', message: '', records: [] };
 
-test('lab controls stay usable while UNION and metadata probes cannot reach secure data', async (t) => {
+await test('lab controls stay usable while UNION and metadata probes cannot reach secure data', async (t) => {
   const secure = database();
   const lab = database();
   t.after(() => { secure.sqlite.close(); lab.sqlite.close(); });
@@ -72,7 +72,7 @@ test('lab controls stay usable while UNION and metadata probes cannot reach secu
   assert.equal((await login(idle, form('student', 'Training123!'))).status, 'success');
 });
 
-test('missing or same-object lab binding fails closed before any database access', async () => {
+await test('missing or same-object lab binding fails closed before any database access', async () => {
   const forbidden = { prepare() { assert.fail('must not touch secure DB'); } };
   for (const env of [{ DB: forbidden }, { DB: forbidden, LAB_DB: forbidden }]) {
     const { vulnerableLogin } = loadSource('app/attack-lab/actions.ts', env);
@@ -84,7 +84,7 @@ test('missing or same-object lab binding fails closed before any database access
 });
 
 
-test('local configuration separates storage and omits the lab from production builds', () => {
+await test('local configuration separates storage and omits the lab from production builds', () => {
   const { localD1Bindings } = loadSource('db/local-bindings.ts', {});
   const development = localD1Bindings('DB', 'serve');
   assert.deepEqual(development.map((db) => db.binding), ['DB', 'LAB_DB']);
