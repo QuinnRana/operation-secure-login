@@ -1,6 +1,6 @@
 'use server';
 
-import { env } from 'cloudflare:workers';
+import { isolatedLabDb, labUnavailableMessage as unavailableMessage } from '@/lib/lab-db';
 
 export type LabRecord = { name: string; role: string; note: string };
 export type AttackState = {
@@ -10,14 +10,6 @@ export type AttackState = {
   query?: string;
 };
 export type ResetState = { status: 'idle' | 'error' | 'success'; message: string };
-
-const unavailableMessage = 'The isolated Attack Lab database is unavailable.';
-
-// Never fall back to the secure login database, including for seed writes.
-function isolatedLabDb() {
-  const labDb = env.LAB_DB;
-  return labDb && labDb !== env.DB ? labDb : null;
-}
 
 async function prepareLab(labDb: D1Database, reset = false) {
   // D1 batches are transactions: no caller can observe a half-reset table.

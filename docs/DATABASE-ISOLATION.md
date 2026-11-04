@@ -12,14 +12,18 @@ The lab deliberately retains its unsafe SQL and fictional plaintext credentials.
 |---|---|---|---|---|
 | `DB` (secure login) | `users` | `id`, `username` (unique), `password_hash`, `password_salt`, `created_at` | `student`, stored as a PBKDF2-SHA-256 hash | `prepareDatabase()` in `app/actions.ts`, on each login submission that passes input validation |
 | `LAB_DB` (Attack Lab) | `lab_accounts` | `id`, `username`, `password` (plaintext, intentional), `display_name`, `role`, `private_note` | `alex`, `jamie`, `casey` with fictional notes | `prepareLab()` in `app/attack-lab/actions.ts`, on each non-blank lab submission (seeding only when the table is empty) and on reset |
+| `LAB_DB` (defended lab) | `defended_lab_accounts` | `id`, `username` (unique), `password_hash`, `password_salt`, `display_name`, `role`, `private_note` | The same three accounts, each with a random salt and a PBKDF2-SHA-256 hash | `prepareDefendedLab()` in `app/defended-lab/actions.ts`, on each valid defended submission (seeding only when the table is empty) and on defended reset. See [DEFENDED-LAB.md](DEFENDED-LAB.md). |
 
-`users` is also described in `db/schema.ts` and `drizzle/`. `lab_accounts` exists only in the lab action's `CREATE TABLE` statement. All seed values are fictional training data written in the source; no real people, real passwords, or reused passwords are involved.
+`users` is also described in `db/schema.ts` and `drizzle/`. `lab_accounts` and `defended_lab_accounts` exist only in their lab actions' `CREATE TABLE` statements, not in `db/schema.ts` or `drizzle/`. All seed values are fictional training data written in the source; no real people, real passwords, or reused passwords are involved.
 
 ## How requests reach each database
 
 1. **Secure login:** `/` renders `components/login-form.tsx`, which submits to the `login` server action in `app/actions.ts`. It validates input, ensures the `users` table and seed exist, and reads the account with a bound parameter. It only ever uses `env.DB`.
 2. **Attack Lab login:** `/attack-lab` renders `components/attack-form.tsx`, which submits to `vulnerableLogin` in `app/attack-lab/actions.ts`. It looks up `env.LAB_DB`, stops with an "unavailable" error if that binding is missing or is the same object as `env.DB`, seeds `lab_accounts` if it is empty, then runs the deliberately string-built query against `LAB_DB` only.
 3. **Attack Lab reset:** the **Reset lab data** button on the same page submits to `resetLab`. It applies the same binding check, drops `lab_accounts` in `LAB_DB`, and re-creates the three seed records. It has no access path to `DB`.
+4. **Defended lab:** `/defended-lab` renders `components/defended-form.tsx`, which submits to `defendedLogin` and `resetDefendedLab` in `app/defended-lab/actions.ts`. They use the same binding check and only touch `defended_lab_accounts` in `LAB_DB`.
+
+All lab actions share one binding check, `isolatedLabDb()` in `lib/lab-db.ts`.
 
 Locally, both bindings come from `db/local-bindings.ts` through `vite.config.ts`. Wrangler stores each database as its own SQLite file under `.wrangler/state/v3/d1/miniflare-D1DatabaseObject/` (ignored by Git). The file names are derived hashes, not the binding names.
 
@@ -52,5 +56,7 @@ No database is provisioned, no credentials are created, and no deployment is per
 Run `pnpm test:isolation` (Node 22.13+). Tests execute the actual TypeScript server actions using disposable in-memory SQLite adapters for the D1 API. They cover secure login success/failure, legitimate lab login, the classroom bypass, cross-table and schema probes, fail-closed bindings, lab reset (seed restored, secure `users` rows unchanged), and local/build configuration. They do not connect to a hosted database. Node may print an experimental SQLite warning on supported older versions.
 
 Run `node --test tests/lab-reset.test.mjs` for disposable Workers/D1 concurrency, rollback and missing-binding checks. It covers ten simultaneous resets, overlapping first logins, reset/login overlap, failed-batch rollback, and preservation of unrelated lab and secure data.
+
+`tests/defended-lab.test.mjs` covers the defended lab; see [DEFENDED-LAB.md](DEFENDED-LAB.md). `pnpm test` runs every test file.
 
 Run `pnpm lint` and `pnpm build` separately; record any pre-existing failures. The intentionally vulnerable baseline remains in Git history and in the local lab for the class evidence workflow.
