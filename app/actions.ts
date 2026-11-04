@@ -29,12 +29,17 @@ async function prepareDatabase() {
     .run();
 }
 
+function formText(formData: FormData, name: string) {
+  const value = formData.get(name);
+  return typeof value === 'string' ? value : '';
+}
+
 export async function login(
   _previousState: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const username = String(formData.get('username') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
+  const username = formText(formData, 'username').trim();
+  const password = formText(formData, 'password');
 
   if (!username || !password) {
     return { status: 'error', message: 'Enter both a username and password.' };
