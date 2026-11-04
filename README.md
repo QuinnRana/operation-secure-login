@@ -42,3 +42,7 @@ This application is for an authorized classroom lab and contains only fictional 
 ## Project wiki
 
 See the [project Wiki](https://github.com/QuinnRana/operation-secure-login/wiki) for architecture, setup, contribution history, the roadmap, and verification notes originally contributed by DavidE2525.
+
+## Rehearsal preparation
+
+See [the rehearsal and recovery guide](docs/REHEARSAL.md) for the pinned tested release, local demonstration sequence, evidence sheet and network-failure plan. It records remaining work rather than claiming the final rehearsal is complete.
