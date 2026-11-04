@@ -32,14 +32,17 @@ async function prepareLab(labDb: D1Database) {
   }
 }
 
+function formText(formData: FormData, name: string) {
+  const value = formData.get(name);
+  return typeof value === 'string' ? value : '';
+}
+
 export async function vulnerableLogin(
   _previousState: AttackState,
   formData: FormData,
 ): Promise<AttackState> {
-  const usernameValue = formData.get('username');
-  const passwordValue = formData.get('password');
-  const username = typeof usernameValue === 'string' ? usernameValue : '';
-  const password = typeof passwordValue === 'string' ? passwordValue : '';
+  const username = formText(formData, 'username');
+  const password = formText(formData, 'password');
   if (!username || !password) return { status: 'error', message: 'Enter both fields.', records: [] };
 
   // Never fall back to the secure login database, including for seed writes.
