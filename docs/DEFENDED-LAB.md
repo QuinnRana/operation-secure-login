@@ -47,6 +47,8 @@ Record the actual results in the team's evidence location. The automated tests b
 - a missing or same-object `LAB_DB` returns the unavailable error without touching any database
 - end to end in the local Workers runtime, parallel logins and resets succeed, leave three accounts, and reject the baseline payload. The local runtime handled these requests one after another, so this test does not by itself prove the race is handled; the test above does.
 
+`tests/defended-failures.test.mjs` additionally exercises the actual local Workers/D1 runtime with a deliberately failing statement appended to the reset transaction. It verifies that prior defended rows, schema and an index survive rollback; a subsequent reset and valid login recover; and the vulnerable-lab table and secure database remain unchanged. It also verifies generic lookup-error responses and missing-binding rejection for both defended actions. Run it with `node --test tests/defended-failures.test.mjs`; `pnpm test` includes it automatically. These checks use disposable fictional data, not the hosted database.
+
 ## Not covered
 
 Rate limiting for the lab logins, sessions, and the hosted site are out of scope here (see issues #9 and #10).
