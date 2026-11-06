@@ -187,10 +187,10 @@ await test('Workers runtime: concurrent first logins and resets keep exactly thr
   };
   const count = async () => (await lab.prepare('SELECT count(*) AS n FROM defended_lab_accounts').first()).n;
 
-  const cold = await Promise.all(Array.from({ length: 6 }, () => call('/login')));
+  const cold = await Promise.all(Array.from({ length: 4 }, () => call('/login')));
   assert(cold.every((result) => result.status === 'success'));
   assert.equal(await count(), 3);
-  const mixed = await Promise.all(Array.from({ length: 6 }, (_, i) => call(i % 2 ? '/login' : '/reset')));
+  const mixed = await Promise.all(Array.from({ length: 6 }, (_, i) => call(i % 2 ? '/login' : '/reset', 'jamie', 'spring22')));
   assert(mixed.every((result) => result.status === 'success'));
   assert.equal(await count(), 3);
   assert.deepEqual(await call('/login', payload, 'test'), failure);

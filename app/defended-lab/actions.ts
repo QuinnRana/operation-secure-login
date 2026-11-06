@@ -1,6 +1,7 @@
 'use server';
 
 import { isolatedLabDb, labUnavailableMessage } from '@/lib/lab-db';
+import { logLogin, reserveLoginAttempt } from '@/lib/login-security';
 import { hashPassword, safeEqual } from '@/lib/password';
 
 export type DefendedState = { status: 'idle' | 'error' | 'success'; message: string };
@@ -68,16 +69,28 @@ export async function defendedLogin(
   if (usernames.length !== 1 || passwords.length !== 1 ||
       typeof usernames[0] !== 'string' || typeof passwords[0] !== 'string' ||
       usernames[0].length > 256 || passwords[0].length > 1024) {
+    logLogin('invalid_input', 'defended_login');
     return { status: 'error', message: 'Enter one valid username and password within the supported lengths.' };
   }
   const username = usernames[0];
   const password = passwords[0];
-  if (!username || !password) return { status: 'error', message: 'Enter both fields.' };
+  if (!username || !password) {
+    logLogin('invalid_input', 'defended_login');
+    return { status: 'error', message: 'Enter both fields.' };
+  }
 
   const labDb = isolatedLabDb();
-  if (!labDb) return { status: 'error', message: labUnavailableMessage };
+  if (!labDb) {
+    logLogin('unavailable', 'defended_login');
+    return { status: 'error', message: labUnavailableMessage };
+  }
 
   try {
+    // Match the exact (untrimmed) account lookup and reserve before any hashing.
+    if (!await reserveLoginAttempt(labDb, username)) {
+      logLogin('throttled', 'defended_login');
+      return { status: 'error', message: 'Too many login attempts. Try again in a minute.' };
+    }
     await prepareDefendedLab(labDb);
     // Bound parameter: the input is only ever compared as data.
     const account = await labDb.prepare(
@@ -89,10 +102,13 @@ export async function defendedLogin(
     // Hash even for unknown users so both failures take similar time.
     const candidate = await hashPassword(password, account?.password_salt ?? randomSalt());
     if (!account || !safeEqual(candidate, account.password_hash)) {
+      logLogin('denied', 'defended_login');
       return { status: 'error', message: failureMessage };
     }
+    logLogin('success', 'defended_login');
     return { status: 'success', message: `Access granted. Welcome, ${account.display_name}.` };
   } catch {
+    logLogin('unavailable', 'defended_login');
     // Never echo the input, query or database error back to the page.
     return { status: 'error', message: 'The defended lab could not check that login. Try again.' };
   }

@@ -1,8 +1,8 @@
 const ATTEMPTS = 5;
 const WINDOW_MS = 60_000;
 
-export function logLogin(outcome: 'invalid_input' | 'denied' | 'success' | 'throttled' | 'unavailable') {
-  console.info(JSON.stringify({ event: 'secure_login', outcome, timestamp: new Date(Date.now()).toISOString() }));
+export function logLogin(outcome: 'invalid_input' | 'denied' | 'success' | 'throttled' | 'unavailable', event: 'secure_login' | 'defended_login' = 'secure_login') {
+  console.info(JSON.stringify({ event, outcome, timestamp: new Date(Date.now()).toISOString() }));
 }
 
 // Call after input validation, before account lookup or password hashing.
