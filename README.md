@@ -61,6 +61,6 @@ Run `pnpm test:login` with Node 22.13+ for disposable SQLite-backed server-actio
 
 Run `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. The test suite includes actual Workers-runtime tests with disposable local D1 databases, in addition to the focused Node/SQLite tests. Workers tests require local loopback sockets; they do not access the hosted website or database. GitHub Actions runs these checks on pushes and pull requests. Deployment remains separate.
 
-## Secure login rate limiting
+## Login rate limiting
 
-The secure login allows five attempts per account per 60-second window using an atomic shared-D1 budget and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.
+The secure login and defended lab each allow five attempts per account per 60-second window using an atomic shared-D1 budget and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.

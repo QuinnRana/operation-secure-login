@@ -15,6 +15,7 @@ Both lab tables live in the same `LAB_DB`. A UNION injection on the vulnerable `
 | Password check | Inside the SQL `WHERE` clause | In code, by hashing the attempt with the stored salt and comparing in constant time |
 | On failure | Shows the query and, for a bypass, the exposed records | One generic message: "The username or password is incorrect." |
 | On success | Lists records | "Access granted. Welcome, *name*." No other records or notes |
+| Attempt budget | None (intentional baseline) | Five attempts per exact username per 60 seconds in shared LAB_DB; [policy and tests](LOGIN-RATE-LIMIT.md) |
 | Table | `lab_accounts` | `defended_lab_accounts` (same `LAB_DB`, separate table) |
 
 Input is limited to one username of up to 256 characters and one password of up to 1,024 characters, like the secure login. By design, unknown usernames are still hashed once against a random salt, so they should take about as long as a wrong password. This was not measured.
@@ -28,6 +29,8 @@ Run `pnpm dev --host 127.0.0.1`, open the URL it prints, and try the same input 
 | `alex` / `falcon7` | 1 record shown | "Access granted. Welcome, Alex Morgan." |
 | `alex` / `wrong` | "Login failed." with the query | "The username or password is incorrect." |
 | `' OR 1=1 --` / any password | Bypass: 3 records and the query shown | "The username or password is incorrect." |
+
+After five attempts for the same username, wait one minute for the fixed cooldown; even correct credentials are throttled until expiry. Reset does not clear the budget.
 
 Record the actual results in the team's evidence location. The automated tests below check the same cases, but they do not replace the browser demonstration.
 
@@ -51,4 +54,4 @@ Record the actual results in the team's evidence location. The automated tests b
 
 ## Not covered
 
-Rate limiting for the lab logins, sessions, and the hosted site are out of scope here (see issues #9 and #10).
+Sessions and the hosted site remain out of scope here (see issue #9). Rate limiting applies only to the defended login; the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
