@@ -64,3 +64,9 @@ Run `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. The test suite
 ## Login rate limiting
 
 The secure login and defended lab each allow five attempts per account per 60-second window using an atomic shared-D1 budget and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.
+
+## Server-action request size
+
+Server-action bodies are capped at **16 KiB (16,384 bytes)** before form decoding, including credential fields and framework metadata. This complements the existing per-field limits, which apply after parsing. Both declared-length and streamed bodies are checked by the framework. Oversized ordinary form submissions receive HTTP 413; client-invoked actions receive the framework's HTTP 500 RSC error response before the action runs. This is not a global traffic limit or a limit on all HTTP routes.
+
+Run `pnpm build && pnpm test:http` to verify the actual built Worker with disposable local D1. The check rejects 16,385-byte forms and fetch-action bodies with and without a declared length, verifies no authentication tables were created, and authenticates valid forms at exactly 16,384 bytes. CI runs this after the build. The cap also applies to local lab server actions; the intentional SQL-injection demonstration and reset forms remain small and unchanged. No deployment or live database changes are included.
