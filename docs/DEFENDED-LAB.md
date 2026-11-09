@@ -32,7 +32,7 @@ Run `pnpm dev --host 127.0.0.1`, open the URL it prints, and try the same input 
 
 After five attempts for the same username, wait one minute for the fixed cooldown; even correct credentials are throttled until expiry. Reset does not clear the budget.
 
-Record the actual results in the team's evidence location. The automated tests below check the same cases, but they do not replace the browser demonstration.
+Record the actual results in the team's evidence location. A browser run of these cases on development `48617f4` is recorded in [before/after evidence](evidence/before-after-2026-11-09.md). The automated tests below check the same cases, but they do not replace the browser demonstration.
 
 ## Reset
 
@@ -54,4 +54,4 @@ Record the actual results in the team's evidence location. The automated tests b
 
 ## Not covered
 
-Sessions and the hosted site remain out of scope here (see issue #9). Rate limiting applies only to the defended login; the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
+Sessions and the hosted site remain out of scope here (see issue #9). Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
