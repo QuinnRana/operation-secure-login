@@ -64,3 +64,7 @@ Run `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. The test suite
 ## Login rate limiting
 
 The secure login and defended lab each allow five attempts per account per 60-second window using an atomic shared-D1 budget and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.
+
+## Browser response protections
+
+Application responses send a scoped Content Security Policy for same-origin forms and base URLs, disable embedded objects, prevent MIME sniffing, and suppress referrers. See [scope, limits and built-Worker checks](docs/RESPONSE-SECURITY.md). After `pnpm build`, run `pnpm test:headers`; GitHub Actions runs it automatically. The intentionally vulnerable local SQL exercise is preserved.
