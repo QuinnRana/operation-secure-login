@@ -1,7 +1,7 @@
 const ATTEMPTS = 5;
 const WINDOW_MS = 60_000;
 
-export function logLogin(outcome: 'invalid_input' | 'denied' | 'success' | 'throttled' | 'unavailable', event: 'secure_login' | 'defended_login' = 'secure_login') {
+export function logLogin(outcome: 'invalid_input' | 'denied' | 'success' | 'throttled' | 'unavailable', event: 'secure_login' | 'defended_login' | 'secure_signup' = 'secure_login') {
   console.info(JSON.stringify({ event, outcome, timestamp: new Date(Date.now()).toISOString() }));
 }
 

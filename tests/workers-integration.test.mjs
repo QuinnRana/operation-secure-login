@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { pbkdf2Sync } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
 
 const bundle = await build({
   stdin: { contents: `
-    import { login } from './app/actions';
+    import { login, register } from './app/actions';
     import { vulnerableLogin } from './app/attack-lab/actions';
     import { hashPassword } from './lib/password';
     // Match production's Web Crypto limit even when local workerd permits more.
@@ -17,7 +20,7 @@ const bundle = await build({
       const path = new URL(request.url).pathname;
       if (path === '/hash') return Response.json(await hashPassword('päss🔒word', 'fixture-salt'));
       const data = await request.formData();
-      return Response.json(await (path === '/lab' ? vulnerableLogin : login)({}, data));
+      return Response.json(await (path === '/lab' ? vulnerableLogin : path === '/signup' ? register : login)({}, data));
     }};
   `, resolveDir: process.cwd(), loader: 'ts' },
   bundle: true, format: 'esm', platform: 'browser', write: false,
@@ -25,7 +28,7 @@ const bundle = await build({
 });
 
 async function submit(runtime, path, username, password) {
-  const body = new URLSearchParams({ username, password });
+  const body = new URLSearchParams({ username, password, confirmPassword: password });
   const response = await runtime.dispatchFetch(`http://localhost${path}`, { method: 'POST', body });
   assert.equal(response.status, 200);
   return response.json();
@@ -72,4 +75,30 @@ await test('concurrent requests across Workers share an atomic account budget', 
   assert.equal(results.filter(result => result.message === 'Too many login attempts. Try again in a minute.').length, 15);
   const result = await submit({ dispatchFetch: (...args) => workers[1].fetch(...args) }, '/', 'student', 'Training123!');
   assert.match(result.message, /Too many/);
+});
+
+
+await test('Workers signup persists across runtime restart and never reaches the isolated lab', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'worker-signup-'));
+  const options = { modules: true, script: bundle.outputFiles[0].text,
+    compatibilityDate: '2026-05-15', d1Databases: { DB: 'signup-secure', LAB_DB: 'signup-lab' }, d1Persist: directory };
+  let runtime = new Miniflare(options);
+  t.after(async () => { await runtime.dispose(); await rm(directory, { recursive: true, force: true }); });
+  const password = 'Workers training phrase 🔒';
+  const created = await submit(runtime, '/signup', 'returning-student', password);
+  assert.equal(created.status, 'success');
+  assert.equal(created.username, 'returning-student');
+  assert.equal((await submit(runtime, '/signup', 'returning-student', 'New competing phrase')).status, 'error');
+  const secure = await runtime.getD1Database('DB');
+  const account = await secure.prepare("SELECT * FROM users WHERE username='returning-student'").first();
+  assert.match(account.password_salt, /^[0-9a-f]{64}$/);
+  assert.equal(account.password_hash, pbkdf2Sync(password, account.password_salt, 120_000, 32, 'sha256').toString('hex'));
+  await runtime.dispose();
+  runtime = new Miniflare(options);
+  assert.equal((await submit(runtime, '/', 'returning-student', password)).status, 'success');
+  assert.equal((await submit(runtime, '/', 'returning-student', 'wrong')).status, 'error');
+  const probe = await submit(runtime, '/lab', "' UNION SELECT username,password_hash,password_salt FROM users --", 'test');
+  assert.equal(probe.status, 'error');
+  assert.deepEqual(probe.records, []);
+  assert.equal((await submit(runtime, '/', 'returning-student', password)).status, 'success');
 });

@@ -26,8 +26,8 @@ export default function Home() {
           <Card className="w-full border-0 bg-transparent shadow-none ring-0">
             <CardHeader className="px-0">
               <div className="mb-4 grid size-11 place-items-center rounded-xl bg-emerald-400/10 text-emerald-500 ring-1 ring-emerald-400/20"><LockKeyhole className="size-5" aria-hidden="true" /></div>
-              <CardTitle className="text-2xl font-semibold tracking-tight">Welcome back</CardTitle>
-              <CardDescription>Enter your account details to continue.</CardDescription>
+              <CardTitle className="text-2xl font-semibold tracking-tight">Your training account</CardTitle>
+              <CardDescription>Log in or create an account to get started.</CardDescription>
             </CardHeader>
             <CardContent className="px-0 pt-3">
               <LoginForm />

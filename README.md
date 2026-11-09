@@ -68,3 +68,16 @@ The secure login and defended lab each allow five attempts per account per 60-se
 ## Authentication failure work
 
 Normal secure login derives a candidate password hash for both known and unknown usernames after rate-limit admission, then returns the same generic invalid-credential response. This removes the large difference from skipping credential hashing for unknown accounts; it does not promise constant response time or prevent all account enumeration. Input rejection and throttled requests still avoid password work. The disposable regression test checks actual hash-call counts rather than flaky wall-clock thresholds. The intentionally vulnerable Attack Lab is unchanged.
+
+
+## Create an account and return later
+
+Select **Create account** on the secure login page. Choose a unique, case-sensitive username (3–64 letters, numbers, periods, underscores, or hyphens) and a password of 12–1,024 UTF-16 code units, then confirm the password. Username edges are trimmed. Passwords are never trimmed, truncated, or normalized. Both password fields are masked; the username stays visible.
+
+After creation, select **Log in to your new account**. The username is carried into the login form; enter the same password. You can close the page or restart the local server and sign in again. The database stores the username, a random 32-byte salt, and the existing PBKDF2-SHA-256 hash format (120,000 iterations), never the plaintext password. Duplicate submissions cannot replace an existing account. The demo account remains available.
+
+Accounts live in the secure `DB`, not the browser or the isolated `LAB_DB`. Local accounts persist in this checkout's ignored `.wrangler/` state. A different checkout, computer, or hosted database has different accounts. Removing the local database deletes local accounts. Publishing the code alone does not migrate accounts or configure hosted persistence. This feature has no password recovery, email verification, or authenticated session/private dashboard; like the existing lab, login verifies credentials and displays a success message. Use unique fictional training credentials, not credentials reused on real services.
+
+Registration allows ten valid-shaped attempts per shared database per 60 seconds, including duplicates and successful signups. The atomic quota is checked before credential hashing and does not consume sign-in quota. The shared limit bounds username-rotation abuse but can temporarily block other students during a burst; it is intentionally conservative for this classroom service. Outcomes are logged without usernames or passwords. Username availability is disclosed at signup. Do not treat this lab as a production identity service.
+
+`pnpm test` covers signup validation, random salts, duplicate/concurrent creation, unchanged existing passwords, exact password bytes, shared signup throttling, and returning login after a database and Workers-runtime restart. The Attack Lab's intentional vulnerability and database boundary remain unchanged.
