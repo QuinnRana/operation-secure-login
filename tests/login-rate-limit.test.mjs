@@ -1,3 +1,4 @@
+import { requestContext } from './request-context.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -24,6 +25,7 @@ function fixture(t) {
     };
   } };
   const modules = new Map();
+  const request = requestContext();
   function load(path) {
     if (modules.has(path)) return modules.get(path);
     const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -32,6 +34,7 @@ function fixture(t) {
     });
     const testModule = { exports: {} };
     const localRequire = name => name === 'cloudflare:workers' ? { env: { DB: db } }
+      : name === 'next/headers' ? request
       : name.startsWith('@/') ? load(`${name.slice(2)}.ts`) : require(name);
     const Clock = class extends Date { static now() { return now; } };
     compileFunction(outputText, ['require', 'module', 'exports', 'Date', 'console'])(

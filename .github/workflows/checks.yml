@@ -19,6 +19,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm test:http
       - name: Verify production lab binding is absent
         run: |
           node --input-type=module -e "import fs from 'node:fs'; import assert from 'node:assert/strict'; const config = JSON.parse(fs.readFileSync('dist/server/wrangler.json')); assert(config.d1_databases.some(d => d.binding === 'DB')); assert(!config.d1_databases.some(d => d.binding === 'LAB_DB'));"

@@ -98,24 +98,26 @@ await test('two Workers share defended quota and preserve vulnerable baseline an
       import { defendedLogin, resetDefendedLab } from './app/defended-lab/actions';
       import { vulnerableLogin, resetLab } from './app/attack-lab/actions';
       import { login } from './app/actions';
-      export default { async fetch(request) {
+      import { withRequest } from './tests/worker-request-context.mjs';
+    export default { async fetch(request) { return withRequest(request, async () => {
         const path = new URL(request.url).pathname;
         if (path === '/reset') return Response.json(await resetDefendedLab());
         if (path === '/reset-vulnerable') return Response.json(await resetLab());
         return Response.json(await (path === '/secure' ? login : path === '/vulnerable' ? vulnerableLogin : defendedLogin)({}, await request.formData()));
-      }};
+      }); }};
     `, resolveDir: process.cwd(), loader: 'ts' },
-    bundle: true, format: 'esm', platform: 'browser', write: false, external: ['cloudflare:workers'],
+    bundle: true, format: 'esm', platform: 'browser', write: false, external: ['cloudflare:workers', 'node:async_hooks'],
+    alias: { 'next/headers': './tests/worker-request-context.mjs' },
   });
   const runtime = new Miniflare({ workers: ['defended-a', 'defended-b'].map(name => ({
-    name, modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-05-15',
+    name, modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-05-15', compatibilityFlags: ['nodejs_compat'],
     d1Databases: { DB: 'secure-fixture', LAB_DB: 'shared-defended-fixture' },
   })) });
   t.after(() => runtime.dispose());
   const workers = await Promise.all(['defended-a', 'defended-b'].map(name => runtime.getWorker(name)));
   const call = async (i, path, username = 'alex', password = 'wrong') => {
     const response = await workers[i % 2].fetch(`http://localhost${path}`, {
-      method: 'POST', body: new URLSearchParams({ username, password }),
+      method: 'POST', headers: { origin: 'http://localhost' }, body: new URLSearchParams({ username, password }),
     });
     assert.equal(response.status, 200);
     return response.json();

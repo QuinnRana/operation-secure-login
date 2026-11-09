@@ -1,3 +1,4 @@
+import { requestContext } from './request-context.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -17,6 +18,7 @@ function loadSource(path, env) {
   const testModule = { exports: {} };
   const localRequire = (name) => {
     if (name === 'cloudflare:workers') return { env };
+    if (name === 'next/headers') return env.testRequest ??= requestContext();
     if (name.startsWith('@/')) return loadSource(`${name.slice(2)}.ts`, env);
     return require(name);
   };

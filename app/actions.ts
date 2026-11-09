@@ -5,23 +5,17 @@ import { env } from 'cloudflare:workers';
 import { hashPassword, safeEqual } from '@/lib/password';
 import { logLogin, reserveLoginAttempt } from '@/lib/login-security';
 import { reserveSignupAttempt } from '@/lib/signup-security';
+import { isSameOriginRequest, startSession } from '@/lib/account-session';
+import { ensureUsersTable } from '@/lib/account-db';
 
-export type LoginState = { status: 'idle' | 'error' | 'success'; message: string; username?: string };
+export type LoginState = { status: 'idle' | 'error' | 'success'; message: string; username?: string; redirectTo?: string };
 
 const demoUsername = 'student';
 const demoPassword = 'Training123!';
 const demoSalt = 'operation-secure-login-demo-salt';
 
 async function prepareDatabase() {
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      password_salt TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
+  await ensureUsersTable();
 
   const passwordHash = await hashPassword(demoPassword, demoSalt);
   await env.DB.prepare(
@@ -54,16 +48,17 @@ export async function login(
   }
 
   try {
+    if (!await isSameOriginRequest()) return { status: 'error', message: 'Reload this page and submit the form again.' };
     if (!await reserveLoginAttempt(env.DB, username)) {
       logLogin('throttled');
       return { status: 'error', message: 'Too many login attempts. Try again in a minute.' };
     }
     await prepareDatabase();
     const user = await env.DB.prepare(
-      'SELECT password_hash, password_salt FROM users WHERE username = ? LIMIT 1',
+      'SELECT id, password_hash, password_salt FROM users WHERE username = ? LIMIT 1',
     )
       .bind(username)
-      .first<{ password_hash: string; password_salt: string }>();
+      .first<{ id: number; password_hash: string; password_salt: string }>();
 
     // Unknown accounts perform the same credential derivation as known accounts.
     // This reduces the large hash-work timing distinction, not all timing variance.
@@ -73,8 +68,9 @@ export async function login(
       return { status: 'error', message: 'The username or password is incorrect.' };
     }
 
+    await startSession(user.id, user.password_hash);
     logLogin('success');
-    return { status: 'success', message: `Access granted. Welcome, ${username}.` };
+    return { status: 'success', message: `Access granted. Welcome, ${username}.`, redirectTo: '/dashboard' };
   } catch {
     logLogin('unavailable');
     return { status: 'error', message: 'Login is temporarily unavailable. Try again later.' };
@@ -112,6 +108,7 @@ export async function register(
   }
 
   try {
+    if (!await isSameOriginRequest()) return { status: 'error', message: 'Reload this page and submit the form again.' };
     if (!await reserveSignupAttempt(env.DB)) {
       logLogin('throttled', 'secure_signup');
       return { status: 'error', message: 'Too many account creation attempts. Try again in a minute.' };

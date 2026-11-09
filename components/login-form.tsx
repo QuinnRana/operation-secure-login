@@ -1,6 +1,8 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CheckCircle2, LoaderCircle, TriangleAlert } from 'lucide-react';
 
 import { login, register, type LoginState } from '@/app/actions';
@@ -27,6 +29,7 @@ function AccountForm({ mode, initialUsername, changeMode }: {
   initialUsername: string;
   changeMode: (mode: Mode, username?: string) => void;
 }) {
+  const router = useRouter();
   const creating = mode === 'signup';
   const [state, formAction, pending] = useActionState(creating ? register : login, initialState);
   const [username, setUsername] = useState(initialUsername);
@@ -38,6 +41,12 @@ function AccountForm({ mode, initialUsername, changeMode }: {
     const timer = window.setTimeout(() => setCompletedCelebration(state), 4500);
     return () => window.clearTimeout(timer);
   }, [state, celebrating]);
+
+  useEffect(() => {
+    if (creating || pending || state.status !== 'success' || state.redirectTo !== '/dashboard') return;
+    const timer = window.setTimeout(() => router.replace('/dashboard'), 1800);
+    return () => window.clearTimeout(timer);
+  }, [creating, pending, state, router]);
 
   return (
     <div className="space-y-5">
@@ -86,7 +95,7 @@ function AccountForm({ mode, initialUsername, changeMode }: {
           <Input id="confirm-password" name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={1024}
             placeholder="Enter your new password again" className="h-11" required readOnly={pending} />
         </div>}
-        <Button type="submit" size="lg" disabled={pending || (creating && state.status === 'success')} className="h-11 w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
+        <Button type="submit" size="lg" disabled={pending || state.status === 'success'} className="h-11 w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
           {pending ? <><LoaderCircle className="animate-spin" />{creating ? 'Creating account…' : 'Checking account…'}</> : creating ? 'Create account' : 'Log in'}
         </Button>
       </form>
@@ -98,6 +107,9 @@ function AccountForm({ mode, initialUsername, changeMode }: {
         </output>
       )}
       {creating && state.status === 'success' && <Button type="button" className="w-full" onClick={() => changeMode('login', state.username)}>Log in to your new account</Button>}
+      {!creating && state.status === 'success' && state.redirectTo === '/dashboard' && <Link href="/dashboard" className="block text-center text-sm font-medium text-emerald-300 underline underline-offset-4">Continue to your dashboard →</Link>}
+      {!creating && <Link href="/recover" className="block text-center text-sm text-muted-foreground underline underline-offset-4">Forgot your password?</Link>}
+      {creating && <p className="text-xs text-muted-foreground">After signing in, save a recovery key from your dashboard so you can reset a forgotten password.</p>}
       <p className="text-xs leading-5 text-muted-foreground">Accounts are saved in this portal’s database. Passwords stay hidden while you type and are stored only as salted hashes.</p>
     </div>
   );

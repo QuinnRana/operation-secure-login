@@ -16,7 +16,8 @@
     "test:isolation": "node --test tests/database-isolation.test.mjs",
     "test:login": "node --test tests/login-input.test.mjs",
     "format": "oxfmt",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test:http": "node scripts/check-account-http.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
