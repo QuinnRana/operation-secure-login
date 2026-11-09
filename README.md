@@ -64,3 +64,7 @@ Run `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. The test suite
 ## Login rate limiting
 
 The secure login and defended lab each allow five attempts per account per 60-second window using an atomic shared-D1 budget and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.
+
+## Authentication failure work
+
+Normal secure login derives a candidate password hash for both known and unknown usernames after rate-limit admission, then returns the same generic invalid-credential response. This removes the large difference from skipping credential hashing for unknown accounts; it does not promise constant response time or prevent all account enumeration. Input rejection and throttled requests still avoid password work. The disposable regression test checks actual hash-call counts rather than flaky wall-clock thresholds. The intentionally vulnerable Attack Lab is unchanged.

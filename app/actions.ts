@@ -64,13 +64,10 @@ export async function login(
       .bind(username)
       .first<{ password_hash: string; password_salt: string }>();
 
-    if (!user) {
-      logLogin('denied');
-      return { status: 'error', message: 'The username or password is incorrect.' };
-    }
-
-    const candidateHash = await hashPassword(password, user.password_salt);
-    if (!safeEqual(candidateHash, user.password_hash)) {
+    // Unknown accounts perform the same credential derivation as known accounts.
+    // This reduces the large hash-work timing distinction, not all timing variance.
+    const candidateHash = await hashPassword(password, user?.password_salt ?? demoSalt);
+    if (!user || !safeEqual(candidateHash, user.password_hash)) {
       logLogin('denied');
       return { status: 'error', message: 'The username or password is incorrect.' };
     }
