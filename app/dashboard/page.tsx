@@ -29,6 +29,7 @@ export default async function Dashboard() {
           <div className="sm:col-span-2"><dt className="text-muted-foreground">This session expires (UTC)</dt><dd className="mt-1"><time dateTime={expiry}>{expiry.replace('T', ' ').replace(/\.\d{3}Z$/, '')}</time></dd></div>
         </dl>
         <AccountControls csrfToken={session.csrfToken} hasRecoveryKey={session.hasRecoveryKey} isDemo={session.isDemo} />
+        <Link href="/account" className="block text-sm text-emerald-300 underline underline-offset-4">View session details →</Link>
         <Link href="/attack-lab" className="block text-sm font-medium text-amber-300 underline underline-offset-4">Open the isolated Attack Lab →</Link>
       </section>
     </main>

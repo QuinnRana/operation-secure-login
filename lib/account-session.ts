@@ -3,6 +3,8 @@ import { cookies, headers } from 'next/headers';
 import { ensureUsersTable } from '@/lib/account-db';
 
 export const SESSION_COOKIE = '__Host-osl-session';
+// Retired PR #33 cookie. Never read it for authentication or copy its sessions.
+export const LEGACY_SESSION_COOKIE = 'osl_session';
 export const SESSION_LIFETIME_MS = 8 * 60 * 60 * 1000;
 export const cookieOptions = { httpOnly: true, secure: true, sameSite: 'strict' as const, path: '/' };
 
@@ -13,6 +15,12 @@ export function randomSecret() {
 export async function digestSecret(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export async function clearSessionCookies() {
+  const jar = await cookies();
+  jar.set(SESSION_COOKIE, '', { ...cookieOptions, maxAge: 0, expires: new Date(0) });
+  jar.set(LEGACY_SESSION_COOKIE, '', { ...cookieOptions, maxAge: 0, expires: new Date(0) });
 }
 
 // Origin is browser-controlled. Do not trust forwarded headers or form-supplied hosts.
@@ -49,6 +57,13 @@ export async function prepareAccountSecurity() {
 
 export async function startSession(userId: number, verifiedPasswordHash: string) {
   await prepareAccountSecurity();
+  const jar = await cookies();
+  const previous = jar.get(SESSION_COOKIE)?.value;
+  // Matthew's revoke-before-create rule: a failed revocation must not issue a
+  // second live session. Other browsers' tokens remain independent.
+  if (previous && /^[a-f0-9]{64}$/.test(previous)) {
+    await env.DB.prepare('DELETE FROM account_sessions WHERE token_hash = ?').bind(await digestSecret(previous)).run();
+  }
   await env.DB.prepare('INSERT OR IGNORE INTO account_security (user_id, credential_version) VALUES (?, ?)')
     .bind(userId, randomSecret()).run();
   const token = randomSecret();
@@ -62,15 +77,13 @@ export async function startSession(userId: number, verifiedPasswordHash: string)
     WHERE users.id = ? AND users.password_hash = ? RETURNING token_hash`)
     .bind(tokenHash, expiresAt, userId, verifiedPasswordHash).first();
   if (!created) throw new Error('Credentials changed');
-  const jar = await cookies();
-  const previous = jar.get(SESSION_COOKIE)?.value;
-  if (previous && /^[a-f0-9]{64}$/.test(previous)) {
-    await env.DB.prepare('DELETE FROM account_sessions WHERE token_hash = ?').bind(await digestSecret(previous)).run();
-  }
   // Expiry cleanup is bounded; the authentication query always checks expiry.
   await env.DB.prepare(`DELETE FROM account_sessions WHERE token_hash IN
     (SELECT token_hash FROM account_sessions WHERE expires_at <= ? LIMIT 100)`).bind(Date.now()).run();
   jar.set(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_LIFETIME_MS / 1000, expires: new Date(expiresAt) });
+  if (jar.get(LEGACY_SESSION_COOKIE)) {
+    jar.set(LEGACY_SESSION_COOKIE, '', { ...cookieOptions, maxAge: 0, expires: new Date(0) });
+  }
 }
 
 export async function getCurrentSession() {

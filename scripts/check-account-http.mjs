@@ -42,6 +42,8 @@ async function request(path, { data, cookie = '', source = origin } = {}) {
   return { response, html };
 }
 try {
+  const anonymousAccount = await request('/account');
+  assert.equal(anonymousAccount.response.status, 307);
   const anonymous = await request('/dashboard');
   assert.equal(anonymous.response.status, 307);
   assert.equal(anonymous.response.headers.get('location'), '/');
@@ -70,19 +72,56 @@ try {
   assert.match(setCookie, /__Host-osl-session=[a-f0-9]{64}/);
   for (const flag of ['HttpOnly', 'Secure', 'SameSite=Strict', 'Path=/']) assert.ok(setCookie.toLowerCase().includes(flag.toLowerCase()), `Cookie must include ${flag}`);
   const cookie = setCookie.split(';')[0];
-  const dashboard = await request('/dashboard', { cookie });
+  assert.match(setCookie, /Max-Age=28800/i);
+  const legacyCookie = `osl_session=${cookie.split('=')[1]}`;
+  for (const path of ['/account', '/dashboard']) {
+    assert.equal((await request(path, { cookie: legacyCookie })).response.status, 307, 'Legacy cookie must never authenticate');
+    assert.equal((await request(path, { cookie })).response.status, 200, 'Both pages accept the canonical token');
+  }
+  async function revoked(oldCookie, reason) {
+    for (const path of ['/account', '/dashboard']) assert.equal((await request(path, { cookie: oldCookie })).response.status, 307, `${reason}: ${path}`);
+  }
+  // Exercise both logout entrypoints before recovery. Reusing a copied cookie
+  // catches the historical dual-store integration even when the UI redirected.
+  let activeCookie = cookie;
+  for (const path of ['/account', '/dashboard']) {
+    const page = await request(path, { cookie: activeCookie });
+    const logoutForm = form(page.html, path === '/dashboard' ? 1 : 0);
+    assert.match(logoutForm.get('csrfToken') ?? '', /^[a-f0-9]{64}$/);
+    for (const source of ['https://attacker.test', null, 'null']) {
+      const denied = await request(path, { cookie: activeCookie, data: logoutForm, source });
+      assert.equal(denied.response.headers.get('set-cookie'), null);
+      assert.equal((await request(path, { cookie: activeCookie })).response.status, 200);
+    }
+    const missingCsrf = form(page.html, path === '/dashboard' ? 1 : 0); missingCsrf.delete('csrfToken');
+    await request(path, { cookie: activeCookie, data: missingCsrf });
+    assert.equal((await request(path, { cookie: activeCookie })).response.status, 200);
+    const signedOut = await request(path, { cookie: activeCookie, data: logoutForm });
+    assert.equal(signedOut.response.status, 303);
+    assert.match(signedOut.response.headers.get('set-cookie') ?? '', /max-age=0/i);
+    await revoked(activeCookie, `${path} logout`);
+    const again = await request('/', { data: credentials });
+    activeCookie = again.response.headers.getSetCookie().find(value => value.startsWith('__Host-osl-session='))?.split(';')[0];
+    assert.ok(activeCookie);
+  }
+  const replaced = activeCookie;
+  const relogin = await request('/', { data: credentials, cookie: activeCookie });
+  activeCookie = relogin.response.headers.getSetCookie().find(value => value.startsWith('__Host-osl-session='))?.split(';')[0];
+  assert.ok(activeCookie); assert.notEqual(activeCookie, replaced);
+  await revoked(replaced, 're-login revokes old token');
+  const dashboard = await request('/dashboard', { cookie: activeCookie });
   assert.equal(dashboard.response.status, 200);
   assert.ok(dashboard.html.includes('Your account dashboard'));
   assert.ok(dashboard.html.includes(username));
-  assert.ok(!dashboard.html.includes(cookie.split('=')[1]), 'Session token must not be serialized in HTML');
+  assert.ok(!dashboard.html.includes(activeCookie.split('=')[1]), 'Session token must not be serialized in HTML');
   const enroll = form(dashboard.html); enroll.set('currentPassword', password);
   const noCsrf = new FormData(); for (const [name, value] of enroll) if (name !== 'csrfToken') noCsrf.append(name, value);
-  await request('/dashboard', { cookie, data: noCsrf });
+  await request('/dashboard', { cookie: activeCookie, data: noCsrf });
   assert.equal((await db.prepare('SELECT recovery_hash FROM account_security').first()).recovery_hash, null);
-  const keyResponse = await request('/dashboard', { cookie, data: enroll });
+  const keyResponse = await request('/dashboard', { cookie: activeCookie, data: enroll });
   const recoveryKey = /<textarea\b[^>]*id="generated-key"[^>]*>([a-f0-9]{64})<\/textarea>/.exec(keyResponse.html)?.[1];
   assert.ok(recoveryKey, 'Successful enrollment must render the one-time key');
-  const refreshed = await request('/dashboard', { cookie });
+  const refreshed = await request('/dashboard', { cookie: activeCookie });
   assert.ok(!refreshed.html.includes(recoveryKey), 'Reload must not reveal the raw recovery key');
   const recoverPage = await request('/recover');
   const recovery = form(recoverPage.html);
@@ -90,8 +129,9 @@ try {
   for (const [name, value] of Object.entries({ username, recoveryKey, newPassword, confirmPassword: newPassword })) recovery.set(name, value);
   const recovered = await request('/recover', { data: recovery });
   assert.ok(recovered.html.includes('Password reset'), 'Recovery must render success');
-  assert.equal((await request('/dashboard', { cookie })).response.status, 307, 'Reset must revoke the old browser session');
+  await revoked(activeCookie, 'Password reset revokes every private page');
   assert.ok(!(await request('/recover', { data: recovery })).html.includes('Password reset.'));
+  await db.prepare('DELETE FROM login_attempt_limits').run();
   const oldLogin = await request('/', { data: credentials });
   assert.equal(oldLogin.response.headers.get('set-cookie'), null);
   credentials.set('password', newPassword);
@@ -102,7 +142,14 @@ try {
   const signout = await request('/dashboard', { cookie: newCookie, data: form(newDashboard.html, 1) });
   assert.equal(signout.response.status, 303);
   assert.match(signout.response.headers.get('set-cookie') ?? '', /max-age=0/i);
-  assert.equal((await request('/dashboard', { cookie: newCookie })).response.status, 307);
+  await revoked(newCookie, 'Dashboard logout after recovery');
+  // Expiry enforcement is checked in the actual built worker, not a mock clock.
+  await db.prepare('DELETE FROM login_attempt_limits').run();
+  const expiryLogin = await request('/', { data: credentials });
+  const expiryCookie = expiryLogin.response.headers.getSetCookie().find(value => value.startsWith('__Host-osl-session='))?.split(';')[0];
+  assert.ok(expiryCookie);
+  await db.prepare('UPDATE account_sessions SET expires_at = 0').run();
+  await revoked(expiryCookie, 'Expired session');
   assert.equal(await db.prepare("SELECT name FROM sqlite_master WHERE name='lab_accounts'").first(), null);
-  console.log('Built-app HTTP checks passed: signup, cookies, private dashboard, CSRF/origin protection, key enrollment, recovery, replay rejection, logout, cache policy and lab isolation.');
+  console.log('Built-app HTTP checks passed: signup, cookies, both private pages, both logout entrypoints, re-login revocation, expiry, legacy-cookie rejection, CSRF/origin protection, key enrollment, recovery, replay rejection, logout, cache policy and lab isolation.');
 } finally { await runtime.dispose(); }

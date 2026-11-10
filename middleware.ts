@@ -9,4 +9,4 @@ export function middleware() {
   return response;
 }
 
-export const config = { matcher: ['/', '/dashboard/:path*', '/recover/:path*'] };
+export const config = { matcher: ['/', '/account/:path*', '/dashboard/:path*', '/recover/:path*'] };

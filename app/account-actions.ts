@@ -3,7 +3,7 @@
 import { env } from 'cloudflare:workers';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { cookieOptions, digestSecret, getCurrentSession, isSameOriginRequest, prepareAccountSecurity, randomSecret, SESSION_COOKIE } from '@/lib/account-session';
+import { clearSessionCookies, digestSecret, getCurrentSession, isSameOriginRequest, prepareAccountSecurity, randomSecret, SESSION_COOKIE } from '@/lib/account-session';
 import { hashPassword, safeEqual } from '@/lib/password';
 import { reserveLoginAttempt, logLogin } from '@/lib/login-security';
 import { reserveRecoveryAttempt } from '@/lib/recovery-security';
@@ -19,10 +19,20 @@ const denied = { status: 'error', message: 'The username or recovery key is inco
 
 export async function logout(data: FormData): Promise<void> {
   if (!await isSameOriginRequest()) return;
-  const session = await getCurrentSession();
-  if (!session || !safeEqual(field(data, 'csrfToken', 64) ?? '', session.csrfToken)) return;
-  await env.DB.prepare('DELETE FROM account_sessions WHERE token_hash = ?').bind(session.tokenHash).run();
-  (await cookies()).set(SESSION_COOKIE, '', { ...cookieOptions, maxAge: 0, expires: new Date(0) });
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (token && /^[a-f0-9]{64}$/.test(token)) {
+    // Check the rendered form's token without reading the store: even during a
+    // DB outage, a legitimate logout must be able to clear this browser's cookie.
+    if (!safeEqual(field(data, 'csrfToken', 64) ?? '', await digestSecret(`csrf:${token}`))) return;
+    try {
+      await env.DB.prepare('DELETE FROM account_sessions WHERE token_hash = ?').bind(await digestSecret(token)).run();
+    } catch {
+      // Server revocation is best effort when the DB is down. A copied cookie
+      // can still work until expiry/recovery; do not claim global revocation.
+      logLogin('unavailable', 'secure_logout');
+    }
+  }
+  await clearSessionCookies();
   redirect('/');
 }
 
