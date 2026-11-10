@@ -15,7 +15,9 @@ function fixture(t, origin = 'http://localhost:5179') {
   const sqlite = new DatabaseSync(':memory:');
   t.after(() => sqlite.close());
   let now = Date.parse('2026-11-10T12:00:00Z');
+  let sessionStoreDown = false;
   const db = { prepare(sql) {
+    if (sessionStoreDown && /\bsessions\b/.test(sql)) throw new Error('sensitive-session-store-error');
     let values = [];
     return { bind(...v) { values = v; return this; },
       async run() { return sqlite.prepare(sql).run(...values); },
@@ -61,6 +63,7 @@ function fixture(t, origin = 'http://localhost:5179') {
     sqlite, jar, session, db, redirectOf,
     advance(ms) { now += ms; },
     now: () => now,
+    sessionStore(up) { sessionStoreDown = !up; },
     signIn(username, password) {
       const form = new FormData(); form.set('username', username); form.set('password', password);
       return actions.signIn({ status: 'idle', message: '' }, form);
@@ -146,18 +149,47 @@ await test('logout deletes the server-side session and the cookie, so the old to
   assert.equal(await f.redirectOf(f.signOut()), '/');
 });
 
-await test('each login gets its own token, and logging out one leaves the other valid', async (t) => {
+await test('a new login in the same browser ends its previous session; other browsers keep theirs', async (t) => {
   const f = fixture(t);
   await f.redirectOf(f.signIn('student', 'Training123!'));
   const first = f.jar.get('osl_session').value;
   await f.redirectOf(f.signIn('student', 'Training123!'));
   const second = f.jar.get('osl_session').value;
   assert.notEqual(first, second);
+  assert.equal(await f.session.readSession(f.db, first, f.now()), null, 'the replaced token no longer works');
+  assert.equal(f.sessionRows().length, 1);
+
+  // A second browser has no cookie yet, so its login leaves the first browser signed in.
+  f.jar.clear();
+  await f.redirectOf(f.signIn('student', 'Training123!'));
+  const otherBrowser = f.jar.get('osl_session').value;
   assert.equal(f.sessionRows().length, 2);
+  assert.equal((await f.session.readSession(f.db, second, f.now())).username, 'student');
 
   await f.redirectOf(f.signOut());
-  assert.equal(await f.session.readSession(f.db, second, f.now()), null);
-  assert.equal((await f.session.readSession(f.db, first, f.now())).username, 'student');
+  assert.equal(await f.session.readSession(f.db, otherBrowser, f.now()), null);
+  assert.equal((await f.session.readSession(f.db, second, f.now())).username, 'student');
+});
+
+await test('logout still clears the cookie and redirects when the session store fails', async (t) => {
+  const f = fixture(t);
+  await f.redirectOf(f.signIn('student', 'Training123!'));
+  const token = f.jar.get('osl_session').value;
+
+  f.sessionStore(false);
+  assert.equal(await f.redirectOf(f.signOut()), '/');
+  assert.equal(f.jar.has('osl_session'), false, 'the browser is logged out even though the row could not be deleted');
+
+  // The row was left in place and still ends at its normal expiry.
+  f.sessionStore(true);
+  assert.equal(await f.session.readSession(f.db, token, f.now() + 1_800_000), null);
+});
+
+await test('a login fails cleanly, without a cookie, when the session store is down', async (t) => {
+  const f = fixture(t);
+  f.sessionStore(false);
+  assert.deepEqual(await f.signIn('student', 'Training123!'), { status: 'error', message: 'Login is temporarily unavailable. Try again later.' });
+  assert.equal(f.jar.size, 0);
 });
 
 await test('creating a session removes expired rows in bounded batches', async (t) => {

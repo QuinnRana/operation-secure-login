@@ -18,9 +18,12 @@ export async function signIn(previousState: LoginState, formData: FormData): Pro
   if (typeof submitted !== 'string') return { status: 'error', message: 'Login is temporarily unavailable. Try again later.' };
   const username = submitted.trim();
   try {
+    const cookieStore = await cookies();
+    // End this browser's previous session so an old token cannot outlive a new login.
+    await destroySession(env.DB, cookieStore.get(SESSION_COOKIE)?.value);
     const { token, expiresAt } = await createSession(env.DB, username);
     const origin = (await headers()).get('origin');
-    (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions(origin, expiresAt));
+    cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions(origin, expiresAt));
   } catch {
     return { status: 'error', message: 'Login is temporarily unavailable. Try again later.' };
   }
@@ -31,8 +34,9 @@ export async function signOut() {
   const cookieStore = await cookies();
   try {
     await destroySession(env.DB, cookieStore.get(SESSION_COOKIE)?.value);
-  } finally {
-    cookieStore.delete(SESSION_COOKIE);
+  } catch {
+    // The row still expires on its own; the browser is always logged out below.
   }
+  cookieStore.delete(SESSION_COOKIE);
   redirect('/');
 }
