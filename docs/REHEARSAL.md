@@ -39,14 +39,15 @@ Stop if any command fails; a successful build alone does not establish working l
 
 | Segment | Action on the local checkout | Expected result / explanation |
 | --- | --- | --- |
-| Build | `/`: `student` / `Training123!` | Success message. This does not create a persistent session or protected account area. |
+| Build | `/`: `student` / `Training123!` | On the pinned checkpoint and `48617f4`: success message only, with no persistent session or protected account area. With sessions (#9): redirects to `/account`. |
+| Session (needs a build with #9) | Log in, open `/account`, log out, then open `/account` again | "Signed in as student" with the expiry time; after logout `/account` redirects to `/`. Explain the server-checked, hashed session token and cookie settings (see `docs/SESSIONS.md`). |
 | Reject invalid login | `/`: `student` / `incorrect-training-password`, then `unknown` with that password | Generic incorrect-credentials response; no query or records displayed. |
 | Secure query control | `/`: username `' OR 1=1 --`, dummy password | Rejected. Bound SQL parameters keep the input as data. |
 | Attack baseline | `/attack-lab`: `alex` / `wrong`, then the page's supplied classroom payload with a dummy password | Wrong password fails; supplied bypass returns three fictional records. Record the displayed query and explain how concatenation changes its meaning. |
 | Isolation | Explain `DB` versus `LAB_DB`; show `pnpm test:isolation` and `pnpm test:workers` results | Separate local databases; tests cover cross-database probes and missing-binding failure. Do not perform probes on the hosted site. |
 | Defended retest (needs `48617f4` or later) | `/defended-lab`: the same classroom payload with a dummy password, then `alex` / `falcon7` | Payload gets the generic "The username or password is incorrect." with no query or records; valid credentials succeed. Explain bound parameters and salted hashes (see `docs/DEFENDED-LAB.md`). |
 | Rate limit (needs `48617f4` or later) | `/defended-lab`: six wrong passwords for one fictional account not used in the last minute (for example `casey`, if the retest above used `alex`) | The sixth returns "Too many login attempts. Try again in a minute." Other accounts still work; the vulnerable `/attack-lab` has no limit. |
-| Current defense limits | Explain what is still missing | The local Attack Lab intentionally remains injectable with fictional plaintext seeds as the baseline. Isolation is not a repaired lab query. The defended lab (#8) and rate limiting (#10) exist on `48617f4` and later; sessions (#9) are not implemented. |
+| Current defense limits | Explain what is still missing | The local Attack Lab intentionally remains injectable with fictional plaintext seeds as the baseline. Isolation is not a repaired lab query. The defended lab (#8) and rate limiting (#10) exist on `48617f4` and later; sessions (#9) are added in a later change (`docs/SESSIONS.md`). |
 
 The defended-lab retest was recorded on development `48617f4` in the [before/after evidence](evidence/before-after-2026-11-09.md), with the baseline retained. During the rehearsal, repeat it live on that commit or a later verified one. Do not replace it with the secure-login control above.
 
@@ -95,7 +96,7 @@ The recorded run used Node v24.22.1 on macOS arm64 and already-installed depende
 
 Assign actual teammates before rehearsal; these prompts do not assign or credit contributions:
 
-- Build speaker: trace the form to the server action and bound SQL lookup. Explain hash comparison and why the success message is not a session.
+- Build speaker: trace the form to the server action and bound SQL lookup. Explain hash comparison. On builds without #9, explain why the success message is not a session; with #9, show `/account`, logout, and the redirect after logout.
 - Attack speaker: show an ordinary failed lab login before the supplied local bypass. Explain how input changes the SQL condition without discovering a password.
 - Defense speaker: distinguish secure-query parameterization from database isolation. Explain why the intentionally vulnerable lab still needs a separate defended implementation and before/after evidence.
 - Reviewer: ask which exact commit was run, which database each action can reach, what a missing lab binding does, and which rubric requirements still lack proof.

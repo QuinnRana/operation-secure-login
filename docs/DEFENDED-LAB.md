@@ -54,4 +54,4 @@ Record the actual results in the team's evidence location. A browser run of thes
 
 ## Not covered
 
-Sessions and the hosted site remain out of scope here (see issue #9). Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
+The lab logins do not create sessions (only the secure login on `/` does; see [SESSIONS.md](SESSIONS.md)), and the hosted site is out of scope here. Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
