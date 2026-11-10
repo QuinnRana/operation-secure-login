@@ -3,14 +3,15 @@
 import { useActionState } from 'react';
 import { CheckCircle2, LoaderCircle, TriangleAlert } from 'lucide-react';
 
-import { login, type LoginState } from '@/app/actions';
+import { type LoginState } from '@/app/actions';
+import { signIn } from '@/app/session-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const initialState: LoginState = { status: 'idle', message: '' };
 
 export function LoginForm() {
-  const [state, formAction, pending] = useActionState(login, initialState);
+  const [state, formAction, pending] = useActionState(signIn, initialState);
 
   return (
     <form action={formAction} className="space-y-5">
