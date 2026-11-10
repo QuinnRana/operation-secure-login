@@ -15,7 +15,7 @@ Both lab tables live in the same `LAB_DB`. A UNION injection on the vulnerable `
 | Password check | Inside the SQL `WHERE` clause | In code, by hashing the attempt with the stored salt and comparing in constant time |
 | On failure | Shows the query and, for a bypass, the exposed records | One generic message: "The username or password is incorrect." |
 | On success | Lists records | "Access granted. Welcome, *name*." No other records or notes |
-| Attempt budget | None (intentional baseline) | Five attempts per exact username per 60 seconds in shared LAB_DB; [policy and tests](LOGIN-RATE-LIMIT.md) |
+| Attempt budget | None (intentional baseline) | Five attempts per exact username and 60 total attempts per 60 seconds in shared LAB_DB; [policy and tests](LOGIN-RATE-LIMIT.md) |
 | Table | `lab_accounts` | `defended_lab_accounts` (same `LAB_DB`, separate table) |
 
 Input is limited to one username of up to 256 characters and one password of up to 1,024 characters, like the secure login. By design, unknown usernames are still hashed once against a random salt, so they should take about as long as a wrong password. This was not measured.
@@ -54,4 +54,4 @@ Record the actual results in the team's evidence location. A browser run of thes
 
 ## Not covered
 
-Sessions and the hosted site remain out of scope here (see issue #9). Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
+Sessions and the hosted site remain out of scope here (see issue #9). Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. A shared 60-attempt database budget also bounds login work when usernames rotate, but can temporarily block legitimate logins when exhausted. Neither budget prevents reset-endpoint abuse; neither lab is a public production authentication service.

@@ -1,4 +1,5 @@
 const ATTEMPTS = 5;
+const GLOBAL_ATTEMPTS = 60;
 const WINDOW_MS = 60_000;
 
 export function logLogin(outcome: 'invalid_input' | 'denied' | 'success' | 'throttled' | 'unavailable', event: 'secure_login' | 'defended_login' = 'secure_login') {
@@ -8,9 +9,26 @@ export function logLogin(outcome: 'invalid_input' | 'denied' | 'success' | 'thro
 // Call after input validation, before account lookup or password hashing.
 // Every valid-shaped attempt consumes quota, including successful logins.
 export async function reserveLoginAttempt(db: D1Database, username: string): Promise<boolean> {
+  const now = Date.now();
+  // A small classroom-wide work budget closes the rotating-username escape
+  // hatch. Reserve before hashing identity or creating/cleaning account rows.
+  // DB and LAB_DB keep independent singleton counters; resets touch neither.
+  await db.prepare(`CREATE TABLE IF NOT EXISTS login_global_limit (
+    scope TEXT PRIMARY KEY CHECK (scope = 'global'),
+    attempts INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
+  )`).run();
+  const global = await db.prepare(`INSERT INTO login_global_limit (scope, attempts, expires_at)
+    VALUES ('global', 1, ?)
+    ON CONFLICT(scope) DO UPDATE SET
+      attempts = CASE WHEN expires_at <= ? THEN 1 ELSE MIN(attempts + 1, ?) END,
+      expires_at = CASE WHEN expires_at <= ? THEN excluded.expires_at ELSE expires_at END
+    RETURNING attempts`).bind(now + WINDOW_MS, now, GLOBAL_ATTEMPTS + 1, now).first<{ attempts: number }>();
+  if (!global || !Number.isInteger(global.attempts) || global.attempts < 1) throw new Error('Invalid global login budget');
+  if (global.attempts > GLOBAL_ATTEMPTS) return false;
+
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(username));
   const key = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-  const now = Date.now();
   await db.prepare(`CREATE TABLE IF NOT EXISTS login_attempt_limits (
     account_key TEXT PRIMARY KEY,
     attempts INTEGER NOT NULL,

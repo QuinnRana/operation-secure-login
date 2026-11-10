@@ -63,7 +63,7 @@ Run `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. The test suite
 
 ## Login rate limiting
 
-The secure login and defended lab each allow five attempts per account per 60-second window using an atomic shared-D1 budget and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.
+The secure login and defended lab each allow five attempts per account per 60-second window, within an additional shared cap of 60 attempts per database per 60-second window. These atomic D1 budgets limit credential work even when usernames rotate, with independent secure/lab quotas and timestamped outcome-only logs. See [policy, tradeoffs, and verification](docs/LOGIN-RATE-LIMIT.md). The intentionally vulnerable local Attack Lab is unchanged.
 
 ## Authentication failure work
 
