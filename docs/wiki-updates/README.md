@@ -4,7 +4,7 @@ The GitHub Wiki has no pull requests, so these pages are reviewed here first. Af
 
 | File here | Wiki page | Change |
 |---|---|---|
-| `Current-State-November-2026.md` | **New page** "Current State November 2026" | What is implemented now, evidence, board status, open items |
+| `Current-State-November-2026.md` | **New page** "Current State November 2026" | Pinned development snapshot, unmerged account/session work, repository evidence, and items needing confirmation |
 | `Home.md` | Replaces "Home" | One table row linking the new page, plus a dated "Status update" section; the October 21 text is unchanged |
 | `Verification-and-Known-Gaps.md` | Replaces "Verification and Known Gaps" | A dated "Status update" section at the end; the October 21 text is unchanged |
 

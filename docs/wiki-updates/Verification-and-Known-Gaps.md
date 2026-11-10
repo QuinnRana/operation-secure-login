@@ -82,10 +82,10 @@ The tables above describe the October 21 snapshot. Status of each known gap on `
 | Lab query | Kept vulnerable on purpose as the baseline; a separate defended login uses bound SQL | #27, `docs/DEFENDED-LAB.md` |
 | Lab passwords | Baseline keeps fictional plaintext on purpose; the defended lab stores salted PBKDF2 hashes | #27 |
 | Secure demo salt | Unchanged; still a documented limitation | — |
-| Session behavior | In review: server-side sessions, `/account`, logout, expiry, runtime CSRF check | #33, #34 |
+| Session behavior | Pinned development still returns a success message. #33/#34 and the separate private-account sessions require unification and verification before integration | #33, #34; [unmerged account and session work](Current-State-November-2026#unmerged-account-and-session-work) |
 | Rate limiting/logging | Implemented on the secure and defended logins, with safe outcome logs | #24, #29, `docs/LOGIN-RATE-LIMIT.md` |
 | Automated regression/CI | Implemented: `pnpm test` and GitHub Actions on every push and pull request | #20, #23 |
 | Access controls | Unchanged from the snapshot | #6 |
-| Rubric/deadline | Matthew reports a deliverables list (repo, project, wiki, optional YouTube links, presentation) shared on 2026-11-10; not yet recorded on #2. Criteria, points and deadline are still unknown | #2 |
+| Rubric/deadline | Confirm the professor's deliverables, grading criteria, points, and deadline in #2; this repository snapshot does not establish them | #2 |
 
 Browser evidence: [secure login (Nov 4)](https://github.com/QuinnRana/operation-secure-login/blob/codex/development/docs/evidence/secure-login-2026-11-04.md) and [before/after lab (Nov 9)](https://github.com/QuinnRana/operation-secure-login/blob/codex/development/docs/evidence/before-after-2026-11-09.md). Neither is yet reproduced by a second teammate. `main` (`59cbc3a`) has #20 and #21 only; the later work (#22–#32) reaches `main` with the final merge (#14).
