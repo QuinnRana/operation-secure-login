@@ -47,7 +47,24 @@ Login and logout are server actions, which vinext 1.0.0-beta.5 handles only for 
 | Logout with `Origin: https://attacker.example` and the valid cookie | `403`, no cookie change, still signed in afterwards |
 | Same-origin logout | `303` to `/`, cookie cleared, the old cookie then gets `307` to `/` |
 
-The forged requests deliberately carried the session cookie, so this tests the `Origin` check on its own; a real browser would also withhold the cookie because of `SameSite=Lax`, which was not tested in a browser here.
+The forged requests deliberately carried the session cookie, so this tests the `Origin` check on its own. In a real browser the cookie was also not sent cross-site: on 2026-11-11 a signed-in Chromium browser loaded `/account` inside a frame on another site and got the login page, while opening `/account` directly showed the signed-in page ([clickjacking evidence](evidence/clickjacking-2026-11-11.md)). That is consistent with `SameSite=Lax`, but the cause was not isolated: the browser's third-party-cookie blocking would give the same result and was not ruled out. It covers a framed `GET`; a cross-site form `POST` was not tried in the browser. The script now also checks the security headers below and the signed-in link on `/`.
+
+## Clickjacking protection and security headers
+
+Every app route sends four headers, set in `next.config.ts` (static files in `public/`, such as the project dashboard, are served directly and were not checked):
+
+| Header | Value | Effect |
+|---|---|---|
+| `Content-Security-Policy` | `frame-ancestors 'none'` | Browsers refuse to show the page inside another site's frame, so an attacker cannot overlay the Log in or Log out button with invisible clicks |
+| `X-Frame-Options` | `DENY` | The same protection for older browsers |
+| `X-Content-Type-Options` | `nosniff` | Browsers must not reinterpret a response as a different content type |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Other sites see only this site's origin, not full page URLs |
+
+vinext's `/:path*` pattern does not match the bare root, so `/` has its own rule; `tests/security-headers.test.mjs` fails if that rule is removed. Redirect responses carry no page and do not get these headers. The CSP sets only `frame-ancestors`; a full script policy would need nonces for the framework's inline scripts. A before/after browser test with an attacker page on another origin is in the [clickjacking evidence](evidence/clickjacking-2026-11-11.md).
+
+## Home page
+
+When a valid session cookie is present, `/` shows "Signed in as *name*" with a link to `/account` above the login form. A missing, tampered or malformed cookie, or a session-store error, shows the plain login form. The page is rendered per request and sent with `Cache-Control: no-store`, so one user's name is never cached for another.
 
 An expired session was also checked end to end: after logging in, `/account` returned `200`; after the session's `expires_at` was set to the past in the local secure database, `/account` returned `307` to `/` and the row was deleted.
 
@@ -75,4 +92,6 @@ Negative controls each made at least one test fail: storing the raw token, ignor
 - Idle timeout and "log out everywhere" are not implemented.
 - Sessions are not shared with the lab pages.
 - Some browsers do not accept `Secure` cookies over plain-http localhost, which is why `Secure` is dropped only for local http. Which browsers behave which way was not tested here; the in-app Chromium browser worked.
-- The browser-side `SameSite=Lax` behavior and the no-`Origin` case were not tested at runtime.
+- A cross-site form `POST` in a real browser (as opposed to a framed `GET`) and the no-`Origin` case were not tested at runtime.
+- The browser test showed the session cookie was not sent in a cross-site frame, but did not isolate whether `SameSite=Lax` or third-party-cookie blocking caused it.
+- If a hosting platform shows the site inside its own preview frame, `frame-ancestors 'none'` would block that preview. Not checked.

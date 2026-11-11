@@ -110,6 +110,25 @@ await check('with the cookie, /account shows the signed-in page', async () => {
   assert.ok(account.signedIn);
 });
 
+await check('/ and /account forbid framing (clickjacking) and send the hardening headers', async () => {
+  for (const path of ['/', '/account']) {
+    const response = await fetch(new URL(path, base), { headers: { cookie }, redirect: 'manual' });
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get('content-security-policy'), "frame-ancestors 'none'", `${path} CSP`);
+    assert.equal(response.headers.get('x-frame-options'), 'DENY', `${path} X-Frame-Options`);
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff', `${path} nosniff`);
+    assert.equal(response.headers.get('referrer-policy'), 'strict-origin-when-cross-origin', `${path} Referrer-Policy`);
+  }
+});
+
+await check('with the cookie, / shows the signed-in link; without it, it does not', async () => {
+  const signedIn = await (await fetch(new URL('/', base), { headers: { cookie } })).text();
+  // React may separate the text and the name with an empty comment.
+  assert.match(signedIn, /Signed in as (<!-- -->)?student/);
+  const anonymous = await (await fetch(new URL('/', base))).text();
+  assert.ok(!anonymous.includes('Signed in as'));
+});
+
 await check('cross-site logout (Origin https://attacker.example) is rejected with 403 and the session survives', async () => {
   const response = await post('/account', await actionForm('/account', cookie), { origin: 'https://attacker.example', cookie });
   assert.equal(response.status, 403);
