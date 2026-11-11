@@ -62,8 +62,9 @@ await test('defended budget rejects attempt six before credential work, survives
   assert.deepEqual(await f.submit('alex', 'falcon7'), throttled);
   f.advance(1);
   assert.equal((await f.submit('alex', 'falcon7')).status, 'success');
-  assert.deepEqual(f.logs.map(x => x.outcome), [...Array(5).fill('denied'), 'throttled', 'throttled', 'throttled', 'success']);
-  for (const event of f.logs) {
+  const loginLogs = f.logs.filter(x => x.event === 'defended_login');
+  assert.deepEqual(loginLogs.map(x => x.outcome), [...Array(5).fill('denied'), 'throttled', 'throttled', 'throttled', 'success']);
+  for (const event of loginLogs) {
     assert.deepEqual(Object.keys(event).sort(), ['event', 'outcome', 'timestamp']);
     assert.equal(event.event, 'defended_login');
     assert.ok(Number.isFinite(Date.parse(event.timestamp)));

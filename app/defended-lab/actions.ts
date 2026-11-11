@@ -2,6 +2,7 @@
 
 import { isolatedLabDb, labUnavailableMessage } from '@/lib/lab-db';
 import { logLogin, reserveLoginAttempt } from '@/lib/login-security';
+import { reserveDefendedReset } from '@/lib/lab-reset-security';
 import { hashPassword, safeEqual } from '@/lib/password';
 
 export type DefendedState = { status: 'idle' | 'error' | 'success'; message: string };
@@ -114,15 +115,26 @@ export async function defendedLogin(
   }
 }
 
-// Restores the defended seed with fresh random salts. Only the defended table in LAB_DB is touched.
+// Restores the defended seed with fresh salts; quota survives the table reset.
 export async function resetDefendedLab(): Promise<DefendedResetState> {
   const labDb = isolatedLabDb();
-  if (!labDb) return { status: 'error', message: labUnavailableMessage };
+  if (!labDb) {
+    logLogin('unavailable', 'defended_reset');
+    return { status: 'error', message: labUnavailableMessage };
+  }
 
   try {
+    // Reserve before any seed hashing or destructive schema work. Fail closed
+    // when the budget store is unavailable; failed resets still consume quota.
+    if (!await reserveDefendedReset(labDb)) {
+      logLogin('throttled', 'defended_reset');
+      return { status: 'error', message: 'Too many defended lab resets. Try again in a minute.' };
+    }
     await prepareDefendedLab(labDb, true);
   } catch {
+    logLogin('unavailable', 'defended_reset');
     return { status: 'error', message: 'The defended lab reset failed. Restart the local server and try again.' };
   }
+  logLogin('success', 'defended_reset');
   return { status: 'success', message: 'Defended lab reset to the 3 fictional accounts with new password hashes.' };
 }

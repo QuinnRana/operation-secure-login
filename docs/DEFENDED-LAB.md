@@ -38,6 +38,12 @@ Record the actual results in the team's evidence location. A browser run of thes
 
 **Reset defended lab** on `/defended-lab` drops and re-creates `defended_lab_accounts` and seeds the three accounts with new random salts and hashes, in one D1 transaction. First use also seeds only an empty table inside a transaction, so overlapping logins and resets cannot duplicate accounts. The defended reset never touches `lab_accounts` or the secure `DB`; the Attack Lab keeps its own **Reset lab data** button.
 
+Defended resets share a separate **three attempts per 60-second fixed window** quota across the whole `LAB_DB`, including concurrent Workers. The fourth attempt returns "Too many defended lab resets. Try again in a minute." before seed hashing or table changes. This caps explicit reset work at nine seed-password derivations per window. A fixed window can admit another three resets at its boundary; this is not a rolling-window or full denial-of-service defense.
+
+The atomic reservation is stored in a single `defended_reset_limit` row outside the tables either reset removes. Successful and failed admitted resets consume quota; rollback cannot refund the work already spent. Blocked requests do not extend the cooldown. Missing or invalid quota results and storage failures fail closed. The secure and defended login budgets remain independent of this reset quota. Reset audit events include only `event`, `outcome`, and a timestamp, never credentials or database errors.
+
+This conservative shared limit may briefly delay other students during a burst. Wait one minute rather than deleting limiter state. It does not authorize public hosting or bound network traffic, database request volume, the intentionally vulnerable lab, or initial login seed work.
+
 ## Tests
 
 `pnpm test` runs `tests/defended-lab.test.mjs`. It checks:
@@ -52,6 +58,8 @@ Record the actual results in the team's evidence location. A browser run of thes
 
 `tests/defended-failures.test.mjs` additionally exercises the actual local Workers/D1 runtime with a deliberately failing statement appended to the reset transaction. It verifies that prior defended rows, schema and an index survive rollback; a subsequent reset and valid login recover; and the vulnerable-lab table and secure database remain unchanged. It also verifies generic lookup-error responses and missing-binding rejection for both defended actions. Run it with `node --test tests/defended-failures.test.mjs`; `pnpm test` includes it automatically. These checks use disposable fictional data, not the hosted database.
 
+`tests/defended-reset-limit.test.mjs` verifies actual hash-call counts, no defended-table access when throttled, exact cooldown recovery, saturated counters, failure-closed storage behavior, failed-reset quota consumption, safe logs, and unchanged baseline/login data. Its Workers/D1 test sends 20 concurrent reset requests across two Workers sharing one lab database: exactly three succeed and 17 are throttled. Repeated vulnerable-lab resets remain possible and cannot replenish the defended reset quota.
+
 ## Not covered
 
-The lab logins do not create sessions (only the secure login on `/` does; see [SESSIONS.md](SESSIONS.md)), and the hosted site is out of scope here. Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. The account-only control does not prevent username spraying or reset-endpoint abuse; neither lab is a public production authentication service.
+The lab logins do not create sessions (only the secure login on `/` does; see [SESSIONS.md](SESSIONS.md)), and the hosted site is out of scope here. Of the two lab logins, rate limiting applies only to the defended one (the secure login on `/` has its own limit); the intentionally vulnerable login remains unlimited. The account-only login control does not prevent username spraying. The separate reset quota bounds defended reset hashing, not all denial-of-service risks; neither lab is a public production authentication service.
