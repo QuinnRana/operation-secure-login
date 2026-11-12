@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { cp, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -30,7 +30,13 @@ try {
     'package.json', 'tsconfig.json', 'vite.config.ts', 'next.config.ts']) {
     await cp(join(root, path), join(fixture, path), { recursive: true });
   }
-  await symlink(join(root, 'node_modules'), join(fixture, 'node_modules'), 'junction');
+  // Keep the dependency directory real so Vite's generated caches stay inside
+  // the fixture. Reuse installed packages, not the checkout's cache directories.
+  await mkdir(join(fixture, 'node_modules'));
+  for (const entry of await readdir(join(root, 'node_modules'))) {
+    if (entry.startsWith('.vite') || entry === '.cache') continue;
+    await symlink(join(root, 'node_modules', entry), join(fixture, 'node_modules', entry));
+  }
   const probe = createServer();
   probe.listen(0, '127.0.0.1');
   await once(probe, 'listening');
@@ -41,7 +47,7 @@ try {
   // vinext CLI does not support --strictPort. Load the actual project plugins.
   await writeFile(join(fixture, 'run.mjs'), `
     import { createServer } from 'vite';
-    const server = await createServer({ cacheDir: '.vite-cache', server: { host: '127.0.0.1', port: ${port}, strictPort: true } });
+    const server = await createServer({ server: { host: '127.0.0.1', port: ${port}, strictPort: true } });
     await server.listen();
     console.log('OSL_DISPOSABLE_SERVER_READY');
     process.on('SIGTERM', async () => { await server.close(); process.exit(0); });
