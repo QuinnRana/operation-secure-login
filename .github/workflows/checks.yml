@@ -18,6 +18,8 @@ jobs:
       - run: pnpm test
       - run: pnpm lint
       - run: pnpm typecheck
+      - name: Verify sessions and CSRF in the actual local framework
+        run: pnpm test:sessions:runtime
       - run: pnpm build
       - name: Verify production lab binding is absent
         run: |

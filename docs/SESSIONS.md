@@ -87,6 +87,23 @@ An expired session was also checked end to end: after logging in, `/account` ret
 
 Negative controls each made at least one test fail: storing the raw token, ignoring expiry, logout without deleting the row, a non-`HttpOnly` cookie, starting a session without checking the result of `login`, not ending the previous session on re-login, and letting a database error stop logout.
 
+## Automated framework regression check
+
+Run `pnpm test:sessions:runtime` after installing dependencies. The runner starts
+its own loopback-only Vite/vinext server in a fresh temporary source copy with
+empty local D1 state, runs all nine checks in `session-csrf-check.mjs`, and removes
+the fixture afterwards. It accepts no URL and never copies `.env` files or an
+existing `.wrangler` database. The server must own its selected port before any
+login/logout checks are sent. Node 22.13+ and local runtime sockets are required.
+
+The Security and build checks workflow runs this command on each push and pull
+request, alongside the unit/Workers suite. It verifies actual framework action
+routing, cross-origin rejection, cookie attributes, protected-route access,
+security headers, signed-in rendering, logout, and rejection of the old token.
+This closes the gap where these checks were manual only. It is HTTP evidence,
+not a real-browser SameSite test or a production-hosting certification. No lab
+application code, baseline evidence, or hosted configuration is changed.
+
 ## Not covered
 
 - Idle timeout and "log out everywhere" are not implemented.
