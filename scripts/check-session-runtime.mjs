@@ -41,7 +41,7 @@ try {
   // vinext CLI does not support --strictPort. Load the actual project plugins.
   await writeFile(join(fixture, 'run.mjs'), `
     import { createServer } from 'vite';
-    const server = await createServer({ server: { host: '127.0.0.1', port: ${port}, strictPort: true } });
+    const server = await createServer({ cacheDir: '.vite-cache', server: { host: '127.0.0.1', port: ${port}, strictPort: true } });
     await server.listen();
     console.log('OSL_DISPOSABLE_SERVER_READY');
     process.on('SIGTERM', async () => { await server.close(); process.exit(0); });
