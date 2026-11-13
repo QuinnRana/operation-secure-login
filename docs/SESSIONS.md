@@ -95,3 +95,18 @@ Negative controls each made at least one test fail: storing the raw token, ignor
 - A cross-site form `POST` in a real browser (as opposed to a framed `GET`) and the no-`Origin` case were not tested at runtime.
 - The browser test showed the session cookie was not sent in a cross-site frame, but did not isolate whether `SameSite=Lax` or third-party-cookie blocking caused it.
 - If a hosting platform shows the site inside its own preview frame, `frame-ancestors 'none'` would block that preview. Not checked.
+
+## Workers/D1 session lifecycle regression
+
+`node --test tests/session-workers.test.mjs` (also included in `pnpm test`)
+executes the actual session helpers in two local Workers sharing one disposable
+D1 database. It checks concurrent first-use creation, distinct tokens and
+digest-only storage, cross-worker reads and revocation, preservation of unrelated
+sessions, persistence after both Workers restart, rejection of a copied database
+digest, and expiry/deletion at the exact 30-minute boundary without sliding expiry.
+A test-only request adapter supplies a fixed clock; it is not an application route.
+The temporary database is removed after the test. No hosted data is accessed.
+
+Negative controls for skipped revocation, accepting the exact expiry boundary,
+and raw-token storage each fail this regression. This checks the session store,
+not browser cookie transport, CSRF, or team reproduction.
