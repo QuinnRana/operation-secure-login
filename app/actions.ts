@@ -22,7 +22,13 @@ async function prepareDatabase() {
     )
   `).run();
 
+  // Once the training account exists, spend password work only on the submitted
+  // credential. Recheck storage each time so a removed seed can be recreated.
+  if (await env.DB.prepare('SELECT 1 FROM users WHERE username = ? LIMIT 1')
+    .bind(demoUsername).first()) return;
+
   const passwordHash = await hashPassword(demoPassword, demoSalt);
+  // Concurrent first requests may both observe no seed; never overwrite one.
   await env.DB.prepare(
     'INSERT OR IGNORE INTO users (username, password_hash, password_salt) VALUES (?, ?, ?)',
   )

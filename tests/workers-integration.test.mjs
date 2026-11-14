@@ -70,6 +70,13 @@ await test('concurrent requests across Workers share an atomic account budget', 
     submit({ dispatchFetch: (...args) => workers[i % 2].fetch(...args) }, '/', i % 2 ? ' student ' : 'student', 'wrong')));
   assert.equal(results.filter(result => result.message === 'The username or password is incorrect.').length, 5);
   assert.equal(results.filter(result => result.message === 'Too many login attempts. Try again in a minute.').length, 15);
+  const secure = await runtime.getD1Database('DB', 'limiter-a');
+  const seeds = (await secure.prepare('SELECT username, password_hash, password_salt FROM users').all()).results;
+  assert.deepEqual(seeds, [{
+    username: 'student',
+    password_hash: pbkdf2Sync('Training123!', 'operation-secure-login-demo-salt', 120_000, 32, 'sha256').toString('hex'),
+    password_salt: 'operation-secure-login-demo-salt',
+  }], 'concurrent cold initialization creates exactly one compatible training account');
   const result = await submit({ dispatchFetch: (...args) => workers[1].fetch(...args) }, '/', 'student', 'Training123!');
   assert.match(result.message, /Too many/);
 });

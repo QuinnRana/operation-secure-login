@@ -118,7 +118,7 @@ await test('known and unknown failures perform equal credential hash work after 
   hashCalls.length = 0;
   const known = await login(idle, form('student', 'wrong'));
   const knownWork = hashCalls.length;
-  assert.equal(knownWork, 2); // Existing seed derivation plus submitted credential.
+  assert.equal(knownWork, 1, 'an initialized database only hashes the submitted credential');
   assert.equal(hashCalls.at(-1).password, 'wrong');
   hashCalls.length = 0;
   assert.deepEqual(await login(idle, form('unknown', 'wrong')), known);
@@ -133,4 +133,67 @@ await test('known and unknown failures perform equal credential hash work after 
   hashCalls.length = 0;
   assert.match((await login(idle, form('unknown', 'wrong'))).message, /Too many/);
   assert.equal(hashCalls.length, 0);
+});
+
+await test('secure seed hashing happens only when the exact training account is absent', async (t) => {
+  const secure = database();
+  t.after(() => secure.sqlite.close());
+  const hashCalls = [];
+  const env = { DB: secure.binding };
+  const { login } = loadSource('app/actions.ts', env, hashCalls);
+  const { hashPassword } = loadSource('lib/password.ts', env);
+  const success = { status: 'success', message: 'Access granted. Welcome, student.' };
+
+  assert.deepEqual(await login(idle, form('student', 'Training123!')), success);
+  assert.equal(hashCalls.length, 2, 'cold initialization hashes the seed and submitted credential');
+  const seed = secure.sqlite.prepare("SELECT * FROM users WHERE username = 'student'").get();
+  hashCalls.length = 0;
+  assert.deepEqual(await login(idle, form('student', 'Training123!')), success);
+  assert.equal(hashCalls.length, 1, 'a warm successful login must not rehash the seed');
+  assert.equal(hashCalls[0].password, 'Training123!');
+  assert.deepEqual(secure.sqlite.prepare("SELECT * FROM users WHERE username = 'student'").get(), seed);
+
+  // An existing account must never be reset to the published training password.
+  const changedPassword = 'fictional changed password';
+  const changedSalt = 'fictional-changed-salt';
+  secure.sqlite.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE username = ?')
+    .run(await hashPassword(changedPassword, changedSalt), changedSalt, 'student');
+  const changed = secure.sqlite.prepare("SELECT * FROM users WHERE username = 'student'").get();
+  hashCalls.length = 0;
+  assert.deepEqual(await login(idle, form('student', changedPassword)), success);
+  assert.deepEqual(hashCalls, [{ password: changedPassword, salt: changedSalt }]);
+  assert.equal((await login(idle, form('student', 'Training123!'))).status, 'error');
+  assert.deepEqual(secure.sqlite.prepare("SELECT * FROM users WHERE username = 'student'").get(), changed);
+
+  // Check the named seed, not just whether *any* user exists, on every request.
+  secure.sqlite.prepare('INSERT INTO users (username, password_hash, password_salt) VALUES (?, ?, ?)')
+    .run('unrelated-fixture', changed.password_hash, changedSalt);
+  const unrelated = secure.sqlite.prepare("SELECT * FROM users WHERE username = 'unrelated-fixture'").get();
+  secure.sqlite.exec("DELETE FROM users WHERE username = 'student'");
+  hashCalls.length = 0;
+  assert.deepEqual(await login(idle, form('student', 'Training123!')), success);
+  assert.equal(hashCalls.length, 2, 'a removed seed is recreated without a process restart');
+  assert.equal(secure.sqlite.prepare("SELECT count(*) AS n FROM users WHERE username = 'student'").get().n, 1);
+  assert.deepEqual(secure.sqlite.prepare("SELECT * FROM users WHERE username = 'unrelated-fixture'").get(), unrelated);
+});
+
+await test('a failed seed-presence lookup fails closed before password work', async (t) => {
+  const secure = database();
+  t.after(() => secure.sqlite.close());
+  const hashCalls = [];
+  let checked = false;
+  const env = { DB: { prepare(sql) {
+    if (/SELECT 1 FROM users WHERE username = \? LIMIT 1/.test(sql)) {
+      checked = true;
+      throw new Error('private-seed-storage-detail');
+    }
+    return secure.binding.prepare(sql);
+  } } };
+  const { login } = loadSource('app/actions.ts', env, hashCalls);
+  assert.deepEqual(await login(idle, form('student', 'Training123!')), {
+    status: 'error', message: 'Login is temporarily unavailable. Try again later.',
+  });
+  assert.equal(checked, true);
+  assert.equal(hashCalls.length, 0);
+  assert.equal(secure.sqlite.prepare('SELECT count(*) AS n FROM users').get().n, 0);
 });
