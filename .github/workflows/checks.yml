@@ -16,6 +16,10 @@ jobs:
       - run: npm install --global pnpm@11.25.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - name: Check dashboard tooltips in Chrome
+        run: pnpm test:dashboard
+        env:
+          CHROME_BIN: google-chrome
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build

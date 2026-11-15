@@ -300,9 +300,8 @@ select.sel:focus,input.inp:focus{outline:none;border-color:var(--accent);box-sha
 .hist{padding:0 18px 12px}
 .hist h4{font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px;margin:6px 0 4px}
 .hint{font-size:12px;color:var(--faint)}
-#tip{position:fixed;z-index:80;pointer-events:none;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow);max-width:300px;opacity:0;transition:opacity .08s;line-height:1.45}
+#tip{position:fixed;z-index:80;pointer-events:none;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow);max-width:300px;white-space:pre-line;overflow-wrap:anywhere;opacity:0;transition:opacity .08s;line-height:1.45}
 #tip.on{opacity:1}
-#tip b{font-weight:700}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;box-shadow:var(--shadow);opacity:0;transition:all .2s;z-index:90;pointer-events:none}
 #toast.on{opacity:1;transform:translateX(-50%)}
 .zoomable{cursor:zoom-in;position:relative;transition:box-shadow .15s,border-color .15s}
@@ -1034,9 +1033,9 @@ function logEvent(type,text,issue,meta){
 }
 function toast(msg){ const t=document.getElementById("toast"); t.innerHTML=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),2200); }
 
-/* tooltip: any element with data-tip */
+/* Tooltips are plain text. Attribute decoding must never become HTML parsing. */
 const tip=document.getElementById("tip");
-document.addEventListener("mouseover",e=>{ const el=e.target.closest("[data-tip]"); if(!el||dragState){ tip.classList.remove("on"); return; } tip.innerHTML=el.dataset.tip; tip.classList.add("on"); });
+document.addEventListener("mouseover",e=>{ const el=e.target.closest("[data-tip]"); if(!el||dragState){ tip.classList.remove("on"); return; } tip.textContent=el.dataset.tip; tip.classList.add("on"); });
 document.addEventListener("mousemove",e=>{ if(!tip.classList.contains("on")) return; const w=tip.offsetWidth,h=tip.offsetHeight; let x=e.clientX+14,y=e.clientY+14; if(x+w>innerWidth-8)x=e.clientX-w-14; if(y+h>innerHeight-8)y=e.clientY-h-14; tip.style.left=x+"px"; tip.style.top=y+"px"; });
 document.addEventListener("mouseout",e=>{ if(e.target.closest("[data-tip]")&&!e.relatedTarget?.closest?.("[data-tip]")) tip.classList.remove("on"); });
 
@@ -1104,7 +1103,7 @@ function renderOverview(){
     <div class="kpi"><div class="k">Issues closed</div><div class="v">${s.done.length} <span style="color:var(--faint);font-size:14px">/ ${s.all.length}</span></div><div class="s">${pct(s.done.length,s.all.length)}% of all issues</div><div class="meter"><i style="width:${pct(s.done.length,s.all.length)}%"></i></div></div>
     <div class="kpi"><div class="k">Story points done</div><div class="v">${s.spDone} <span style="color:var(--faint);font-size:14px">/ ${s.spTot}</span></div><div class="s">${pct(s.spDone,s.spTot)}% of planned points</div><div class="meter"><i style="width:${pct(s.spDone,s.spTot)}%"></i></div></div>
     <div class="kpi"><div class="k">Next milestone</div><div class="v" style="font-size:16px;padding-top:3px">${s.next?esc(s.next.note||s.next.title):"—"}</div><div class="s">${s.next?`${fmt(s.next.due)} · in ${diff(s.t,s.next.due)} days`:""}</div></div>
-    <div class="kpi"><div class="k">Overdue</div><div class="v" style="color:${s.late.length?"var(--danger)":"var(--ok)"}">${s.late.length}</div><div class="s" data-tip="${esc(s.late.map(i=>`#${i.id} ${i.title}`).join("<br>")||"Nothing overdue")}">${s.late.length?s.late.map(i=>"#"+i.id).join(", "):"Nothing overdue"}</div></div>
+    <div class="kpi"><div class="k">Overdue</div><div class="v" style="color:${s.late.length?"var(--danger)":"var(--ok)"}">${s.late.length}</div><div class="s" data-tip="${esc(s.late.map(i=>`#${i.id} ${i.title}`).join("\n")||"Nothing overdue")}">${s.late.length?s.late.map(i=>"#"+i.id).join(", "):"Nothing overdue"}</div></div>
     <div class="kpi"><div class="k">Commits this sprint</div><div class="v">${s.commitsSprint}</div><div class="s">${s.sp?`Sprint ${s.sp.n}`:""} · all members</div></div>
   </div>
   <div class="toolbar">
@@ -1145,7 +1144,7 @@ function ganttHTML(){
   let sprints="";
   for(const sp of S.sprints){
     const w=(diff(sp.start,sp.end)+1)*Z, narrow=w<90;
-    sprints+=`<div class="th-s${cur&&cur.n===sp.n?" cur":""}" data-sprint="${sp.n}" style="left:${X(sp.start)}px;width:${w}px" data-tip="<b>Sprint ${sp.n}</b> · ${fmt(sp.start)} – ${fmt(sp.end)}${sp.goal?`<br>${esc(sp.goal)}`:""}<br><span style='color:var(--faint)'>Click to edit sprint dates</span>">
+    sprints+=`<div class="th-s${cur&&cur.n===sp.n?" cur":""}" data-sprint="${sp.n}" style="left:${X(sp.start)}px;width:${w}px" data-tip="Sprint ${sp.n} · ${fmt(sp.start)} – ${fmt(sp.end)}${sp.goal?`\n${esc(sp.goal)}`:""}\nClick to edit sprint dates">
       <span class="pen">✎</span>${extended.has(sp.n)?`<span class="ext" title="Deadline was extended">⏱</span>`:""}
       <b>${narrow?"S":"Sprint "}${sp.n}</b><span>${narrow?fmt(sp.start).replace(/^(\w{3}) /,"$1 "):`${fmt(sp.start)} – ${fmt(sp.end)}`}</span></div>`;
   }
@@ -1195,10 +1194,10 @@ function summaryRow(level,obj,issues,X,Z,ms){
   let track="";
   if(start){
     const l=X(start), w=(diff(start,end)+1)*Z;
-    track+=`<div class="sbar ${kind}" style="left:${l}px;width:${w}px;background:color-mix(in srgb,${color} 30%,transparent)" data-tip="<b>${esc(obj.title)}</b><br>${fmt(start)} – ${fmt(end)}<br>${done}/${issues.length} issues · ${spDone}/${sp} SP (${pct}%)"><i style="width:${pct}%;background:${color}"></i></div>`;
+    track+=`<div class="sbar ${kind}" style="left:${l}px;width:${w}px;background:color-mix(in srgb,${color} 30%,transparent)" data-tip="${esc(obj.title)}\n${fmt(start)} – ${fmt(end)}\n${done}/${issues.length} issues · ${spDone}/${sp} SP (${pct}%)"><i style="width:${pct}%;background:${color}"></i></div>`;
     if(level===1) track+=`<span class="sbar-lbl" style="left:${Math.max(l+w,obj.due?X(obj.due)+Z+8:0)+10}px">${pct}%${obj.note?" · "+esc(obj.note):""}</span>`;
   }
-  if(level===1&&obj.due) track+=`<div class="diamond" style="left:${X(obj.due)+Z}px;background:${color}" data-tip="<b>${esc(obj.note)}</b><br>Due ${fmtL(obj.due)}"></div>`;
+  if(level===1&&obj.due) track+=`<div class="diamond" style="left:${X(obj.due)+Z}px;background:${color}" data-tip="${esc(obj.note)}\nDue ${fmtL(obj.due)}"></div>`;
   const chev=`<button class="chev" data-toggle aria-label="Expand or collapse">▼</button>`;
   const head = level===1
     ? `${chev}<span class="mbar" style="background:${color}"></span><span class="nm ed" data-ed="ms:${obj.id}:title">${esc(obj.title)}</span><span class="cnt-badge">${issues.length}</span>
@@ -1220,7 +1219,7 @@ function issueRow(i,X,Z){
   const l=X(i.start), w=Math.max((diff(i.start,i.end)+1)*Z,8);
   const cls=["bar"]; if(i.tbd)cls.push("tbd"); if(i.status==="done")cls.push("done"); if(isLate(i))cls.push("late");
   const showTxt=w>70;
-  const tipTxt=`<b>#${i.id} ${esc(i.title)}</b><br>${esc(i.assignee)} · ${i.sp} SP · ${ST[i.status].label}<br>${fmt(i.start)} – ${fmt(i.end)}${i.tbd?" (TBD)":""}${i.deps.length?`<br>Blocked by ${i.deps.map(d=>"#"+d).join(", ")}`:""}${isLate(i)?"<br><b style='color:var(--danger)'>Overdue</b>":""}<br><span style='color:var(--faint)'>Drag to move · drag right edge to resize · click to open</span>`;
+  const tipTxt=`#${i.id} ${i.title}\n${i.assignee} · ${i.sp} SP · ${ST[i.status].label}\n${fmt(i.start)} – ${fmt(i.end)}${i.tbd?" (TBD)":""}${i.deps.length?`\nBlocked by ${i.deps.map(d=>"#"+d).join(", ")}`:""}${isLate(i)?"\nOverdue":""}\nDrag to move · drag right edge to resize · click to open`;
   return `<div class="g-row l3${i.status==="done"?" done":""}" data-issue="${i.id}"><div class="g-cells">
       <div class="c-name">${issueIcon(i)}<span class="num" data-act="open" data-id="${i.id}">#${i.id}</span><span class="nm ed" data-ed="issue:${i.id}:title" title="${esc(i.title)}">${esc(i.title)}</span></div>
       <div class="ed" data-ed="issue:${i.id}:assignee" style="gap:6px">${avatar(i.assignee)}<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(i.assignee)}</span></div>
@@ -1375,7 +1374,7 @@ function barMove(e){
   if(d.mode==="move") d.bar.style.left=(d.l0+d.dd*ui.zoom)+"px";
   else d.bar.style.width=Math.max(ui.zoom,d.w0+d.dd*ui.zoom)+"px";
   const ns=d.mode==="move"?addD(d.i.start,d.dd):d.i.start, ne=addD(d.i.end,d.dd);
-  tip.innerHTML=`<b>#${d.i.id}</b> ${fmt(ns)} – ${fmt(ne<ns?ns:ne)}`; tip.classList.add("on");
+  tip.textContent=`#${d.i.id} ${fmt(ns)} – ${fmt(ne<ns?ns:ne)}`; tip.classList.add("on");
   tip.style.left=(e.clientX+14)+"px"; tip.style.top=(e.clientY+14)+"px";
 }
 function barUp(){
@@ -1513,8 +1512,8 @@ function renderActivity(){
     if(d>t){ cells+=`<div class="d fut" data-tip="${fmtL(d)} · upcoming"></div>`; continue; }
     const c=counts[d]; const n=c?c.n:0; const lvl=n?Math.min(4,Math.ceil(n/max*4)):0;
     const style=hue&&lvl?`style="background:color-mix(in srgb,${hue} ${[0,40,62,82,100][lvl]}%,var(--hm0))"`:"";
-    const br=c?Object.entries(c.by).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span style='color:${mc(p)}'>●</span> ${p} ${v}`).join("<br>"):"";
-    cells+=`<div class="d${hue?"":" l"+lvl}${ui.hmDay===d?" sel":""}${d===t?" today":""}" ${style} data-day="${d}" data-tip="<b>${n} ${ui.hmMetric==="commits"?"commit":"contribution"}${n===1?"":"s"}</b> on ${fmtL(d)}${br?"<br>"+br:""}"></div>`;
+    const br=c?Object.entries(c.by).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`● ${p} ${v}`).join("\n"):"";
+    cells+=`<div class="d${hue?"":" l"+lvl}${ui.hmDay===d?" sel":""}${d===t?" today":""}" ${style} data-day="${d}" data-tip="${n} ${ui.hmMetric==="commits"?"commit":"contribution"}${n===1?"":"s"} on ${fmtL(d)}${br?"\n"+esc(br):""}"></div>`;
   }
   const legendCells=[0,1,2,3,4].map(l=>hue?`<i style="background:${l?`color-mix(in srgb,${hue} ${[0,40,62,82,100][l]}%,var(--hm0))`:"var(--hm0)"}"></i>`:`<i style="background:var(--hm${l})"></i>`).join("");
   const memStats=PEOPLE.map(p=>{ const ev=S.events.filter(e=>e.actor===p); return {p,commits:ev.filter(e=>e.type==="commit").length,closed:ev.filter(e=>e.type==="issue_closed").length,opened:ev.filter(e=>e.type==="issue_created").length,total:ev.length,streak:streak(p)}; });
@@ -1589,7 +1588,7 @@ function dailyStack(){
   let bars="";
   data.forEach((x,k)=>{ let acc=0; const xx=L+k*pw+1.5;
     PEOPLE.forEach(p=>{ const v=x.by[p]; if(!v) return; const y1=y(acc+v), y0=y(acc); bars+=`<rect x="${xx}" y="${y1}" width="${bw}" height="${Math.max(0,y0-y1-1.5)}" rx="1.5" style="fill:${mc(p)}"/>`; acc+=v; });
-    bars+=`<rect x="${L+k*pw}" y="${TP}" width="${pw}" height="${H-TP-B}" fill="transparent" data-tip="<b>${fmtL(x.d)}</b><br>${x.tot} commits<br>${PEOPLE.filter(p=>x.by[p]).map(p=>`<span style='color:${mc(p)}'>■</span> ${p} ${x.by[p]}`).join("<br>")}"/>`;
+    bars+=`<rect x="${L+k*pw}" y="${TP}" width="${pw}" height="${H-TP-B}" fill="transparent" data-tip="${fmtL(x.d)}\n${x.tot} commits\n${esc(PEOPLE.filter(p=>x.by[p]).map(p=>`■ ${p} ${x.by[p]}`).join("\n"))}"/>`;
     if(pd(x.d).getDay()===1) bars+=`<text x="${xx+bw/2}" y="${H-6}" text-anchor="middle">${fmt(x.d)}</text>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily commits stacked by member">${g}<line class="axis" x1="${L}" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>${bars}</svg>
@@ -1702,7 +1701,7 @@ function burndown(){
   const step=Math.max(1,Math.ceil(n/7)); for(let k=0;k<=n;k+=step) g+=`<text x="${x(k)}" y="${H-6}" text-anchor="middle">${fmt(addD(a,k))}</text>`;
   const actual=pts.map((p,j)=>`${j?"L":"M"}${x(p.k)},${y(p.rem)}`).join("");
   const last=pts[pts.length-1];
-  const hits=pts.map(p=>`<rect x="${x(p.k)-(W-L-R)/n/2}" y="${TP}" width="${(W-L-R)/Math.max(1,n)}" height="${H-TP-B}" fill="transparent" data-tip="<b>${fmtL(p.d)}</b><br>${p.rem} SP remaining<br>Ideal: ${Math.round(total*(1-p.k/n))} SP"/>`).join("");
+  const hits=pts.map(p=>`<rect x="${x(p.k)-(W-L-R)/n/2}" y="${TP}" width="${(W-L-R)/Math.max(1,n)}" height="${H-TP-B}" fill="transparent" data-tip="${fmtL(p.d)}\n${p.rem} SP remaining\nIdeal: ${Math.round(total*(1-p.k/n))} SP"/>`).join("");
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Burndown for ${esc(title)}">${g}
     <line class="axis" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>
     <line x1="${x(0)}" y1="${y(total)}" x2="${x(n)}" y2="${y(0)}" style="stroke:var(--faint);stroke-width:2;stroke-dasharray:5 5"/>
@@ -1726,7 +1725,7 @@ function velocityChart(v){
     const r=(xx,val,fill)=>{ const h=y(0)-y(val); return h>0?`<path d="M${xx},${y(0)} v${-(h-4)} q0,-4 4,-4 h${bw-8} q4,0 4,4 v${h-4}z" style="fill:${fill}"/>`:""; };
     bars+=r(cx-bw-1,s.committed,"var(--faint)")+r(cx+1,s.completed,"var(--accent)");
     bars+=`<text x="${cx}" y="${H-6}" text-anchor="middle">S${s.n}${s.closed?"":"*"}</text>`;
-    bars+=`<rect x="${cx-gw/2}" y="${TP}" width="${gw}" height="${H-TP-B}" fill="transparent" data-tip="<b>Sprint ${s.n}</b>${s.closed?"":" (in progress)"}<br>Committed ${s.committed} SP<br>Completed ${s.completed} SP"/>`;
+    bars+=`<rect x="${cx-gw/2}" y="${TP}" width="${gw}" height="${H-TP-B}" fill="transparent" data-tip="Sprint ${s.n}${s.closed?"":" (in progress)"}\nCommitted ${s.committed} SP\nCompleted ${s.completed} SP"/>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Velocity per sprint">${g}<line class="axis" x1="${L}" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>${bars}</svg>
     <div class="lg" style="margin-top:8px"><span><i style="background:var(--faint)"></i>Committed</span><span><i style="background:var(--accent)"></i>Completed</span><span>* sprint in progress</span></div>`;
@@ -1738,7 +1737,7 @@ function workload(rows){
   rows.forEach((r,k)=>{ const yy=k*rowH+6; let acc=L;
     const segs=[["Done",r.spDone,100],["In progress / review",r.active,60],["Not started",r.spOpen-r.active,28]];
     h+=`<text x="${L-10}" y="${yy+15}" text-anchor="end" style="fill:var(--text);font-weight:600">${r.p}</text>`;
-    segs.forEach(([lab,v,o])=>{ if(!v) return; const w=x(v); h+=`<rect x="${acc}" y="${yy}" width="${Math.max(1,w-2)}" height="20" rx="3" style="fill:color-mix(in srgb,${mc(r.p)} ${o}%,var(--panel))" data-tip="<b>${r.p}</b> · ${lab}<br>${v} SP"/>`; acc+=w; });
+    segs.forEach(([lab,v,o])=>{ if(!v) return; const w=x(v); h+=`<rect x="${acc}" y="${yy}" width="${Math.max(1,w-2)}" height="20" rx="3" style="fill:color-mix(in srgb,${mc(r.p)} ${o}%,var(--panel))" data-tip="${esc(r.p)} · ${lab}\n${v} SP"/>`; acc+=w; });
     h+=`<text x="${acc+6}" y="${yy+15}">${r.spDone}/${r.spDone+r.spOpen} SP</text>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Story points per member by state">${h}</svg>
@@ -1747,7 +1746,7 @@ function workload(rows){
 function statusDist(){
   const tot=S.issues.length||1; let acc=0, segs="", rows="";
   for(const [k,l,c] of STATUSES){ const n=S.issues.filter(i=>i.status===k).length, sp=S.issues.filter(i=>i.status===k).reduce((a,i)=>a+i.sp,0); const w=n/tot*100;
-    if(n) segs+=`<div style="width:calc(${w}% - 2px);background:${c};height:100%;border-radius:3px" data-tip="<b>${l}</b><br>${n} issues · ${sp} SP"></div>`;
+    if(n) segs+=`<div style="width:calc(${w}% - 2px);background:${c};height:100%;border-radius:3px" data-tip="${l}\n${n} issues · ${sp} SP"></div>`;
     rows+=`<tr><td><span style="color:${c}">●</span> ${l}</td><td class="n">${n}</td><td class="n">${sp} SP</td><td class="n">${Math.round(w)}%</td></tr>`; acc+=w; }
   return `<div style="display:flex;gap:2px;height:22px;margin:6px 0 14px">${segs}</div><table class="tbl"><tbody>${rows}</tbody></table>`;
 }
