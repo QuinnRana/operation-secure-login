@@ -58,3 +58,18 @@ await test('Workers runtime with production bindings disables the lab', async (t
   assert.deepEqual(result.records, []);
   assert.equal(result.query, undefined);
 });
+
+await test('concurrent requests across Workers share an atomic account budget', async (t) => {
+  const runtime = new Miniflare({ workers: ['limiter-a', 'limiter-b'].map(name => ({
+    name, modules: true, script: bundle.outputFiles[0].text,
+    compatibilityDate: '2026-05-15', d1Databases: { DB: 'shared-rate-limit-fixture' },
+  })) });
+  t.after(() => runtime.dispose());
+  const workers = await Promise.all(['limiter-a', 'limiter-b'].map(name => runtime.getWorker(name)));
+  const results = await Promise.all(Array.from({ length: 20 }, (_, i) =>
+    submit({ dispatchFetch: (...args) => workers[i % 2].fetch(...args) }, '/', i % 2 ? ' student ' : 'student', 'wrong')));
+  assert.equal(results.filter(result => result.message === 'The username or password is incorrect.').length, 5);
+  assert.equal(results.filter(result => result.message === 'Too many login attempts. Try again in a minute.').length, 15);
+  const result = await submit({ dispatchFetch: (...args) => workers[1].fetch(...args) }, '/', 'student', 'Training123!');
+  assert.match(result.message, /Too many/);
+});

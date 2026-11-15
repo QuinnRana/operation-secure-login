@@ -1,10 +1,26 @@
+import { env } from 'cloudflare:workers';
 import { LockKeyhole, ShieldCheck } from 'lucide-react';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoginForm } from '@/components/login-form';
+import { readSession, SESSION_COOKIE } from '@/lib/session';
 
-export default function Home() {
+// The page shows who is signed in, so it must never be cached across users.
+export const dynamic = 'force-dynamic';
+
+async function signedInUser() {
+  try {
+    return (await readSession(env.DB, (await cookies()).get(SESSION_COOKIE)?.value))?.username ?? null;
+  } catch {
+    // The login form must keep working even if the session store is unavailable.
+    return null;
+  }
+}
+
+export default async function Home() {
+  const username = await signedInUser();
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10">
       <div className="security-grid absolute inset-0" aria-hidden="true" />
@@ -30,6 +46,12 @@ export default function Home() {
               <CardDescription>Enter your account details to continue.</CardDescription>
             </CardHeader>
             <CardContent className="px-0 pt-3">
+              {username && (
+                <Link href="/account" className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2.5 text-sm text-emerald-300 transition hover:bg-emerald-400/15">
+                  <span>Signed in as {username}</span>
+                  <span className="font-medium">Go to your account →</span>
+                </Link>
+              )}
               <LoginForm />
               <div className="mt-6 rounded-xl bg-white/5 px-3 py-2.5 text-center font-mono text-xs leading-5 text-muted-foreground">
                 Demo: student / Training123!

@@ -1,0 +1,30 @@
+name: Rehearsal evidence
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: QuinnRana/operation-secure-login
+          ref: 59cbc3a9dd81129ffb208a6f77c5bc5f74790d94
+          path: rehearsal-target
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+        working-directory: rehearsal-target
+      - name: Validate evidence runner syntax and lint
+        run: |
+          node --check scripts/rehearsal-evidence.mjs
+          export PATH="$GITHUB_WORKSPACE/rehearsal-target/node_modules/.bin:$PATH"
+          oxlint scripts/rehearsal-evidence.mjs
+      - name: Execute disposable rehearsal matrix
+        run: node scripts/rehearsal-evidence.mjs "$GITHUB_WORKSPACE/rehearsal-target"

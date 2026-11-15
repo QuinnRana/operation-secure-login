@@ -20,6 +20,9 @@ export default function AttackLabPage() {
               <code className="mt-2 block select-all text-amber-300">&apos; OR 1=1 --</code>
               <p className="mt-3 text-xs leading-5 text-slate-400">Paste it into Username, enter anything in Password, then capture the result for your report.</p>
             </div>
+            <Link href="/defended-lab" className="block rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2.5 text-center text-xs font-medium text-emerald-300 transition hover:bg-emerald-400/10">
+              Retest the same payload on the defended lab →
+            </Link>
           </section>
           <Card className="border-white/10 bg-card/90 py-6">
             <CardHeader><CardTitle className="text-xl">Vulnerable login</CardTitle><CardDescription>Use only the supplied classroom payload against this lab.</CardDescription></CardHeader>

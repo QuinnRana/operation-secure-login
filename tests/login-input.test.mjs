@@ -9,7 +9,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 
 // Execute the actual server actions with local SQLite-backed D1 adapters.
-function loadSource(path, env) {
+function loadSource(path, env, hashCalls = []) {
   const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -17,7 +17,16 @@ function loadSource(path, env) {
   const testModule = { exports: {} };
   const localRequire = (name) => {
     if (name === 'cloudflare:workers') return { env };
-    if (name.startsWith('@/')) return loadSource(`${name.slice(2)}.ts`, env);
+    if (name.startsWith('@/')) {
+      const loaded = loadSource(`${name.slice(2)}.ts`, env, hashCalls);
+      if (name === '@/lib/password') {
+        return { ...loaded, async hashPassword(password, salt) {
+          hashCalls.push({ password, salt });
+          return loaded.hashPassword(password, salt);
+        } };
+      }
+      return loaded;
+    }
     return require(name);
   };
   compileFunction(outputText, ['require', 'module', 'exports'])(localRequire, testModule, testModule.exports);
@@ -97,4 +106,31 @@ await test('valid credentials, trimming, exact password bytes, and parameterized
     .run('équipe', await hashPassword(unicodePassword, 'unicode-fixture'), 'unicode-fixture');
   assert.equal((await login(idle, form(' équipe ', unicodePassword))).status, 'success');
   assert.equal((await login(idle, form('équipe', unicodePassword.trim()))).status, 'error');
+});
+
+await test('known and unknown failures perform equal credential hash work after admission', async (t) => {
+  const secure = database();
+  t.after(() => secure.sqlite.close());
+  const hashCalls = [];
+  const { login } = loadSource('app/actions.ts', { DB: secure.binding }, hashCalls);
+  // Warm the database first; only fictional fixture credentials are observed.
+  assert.equal((await login(idle, form('student', 'Training123!'))).status, 'success');
+  hashCalls.length = 0;
+  const known = await login(idle, form('student', 'wrong'));
+  const knownWork = hashCalls.length;
+  assert.equal(knownWork, 2); // Existing seed derivation plus submitted credential.
+  assert.equal(hashCalls.at(-1).password, 'wrong');
+  hashCalls.length = 0;
+  assert.deepEqual(await login(idle, form('unknown', 'wrong')), known);
+  assert.equal(hashCalls.length, knownWork);
+  assert.equal(hashCalls.at(-1).password, 'wrong');
+  assert.equal(secure.sqlite.prepare("SELECT count(*) AS count FROM users WHERE username='unknown'").get().count, 0);
+  // Invalid requests and requests beyond the account budget still skip hashing.
+  hashCalls.length = 0;
+  assert.equal((await login(idle, form('', 'wrong'))).status, 'error');
+  assert.equal(hashCalls.length, 0);
+  for (let attempt = 0; attempt < 4; attempt++) await login(idle, form('unknown', 'wrong'));
+  hashCalls.length = 0;
+  assert.match((await login(idle, form('unknown', 'wrong'))).message, /Too many/);
+  assert.equal(hashCalls.length, 0);
 });

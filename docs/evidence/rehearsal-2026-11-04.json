@@ -1,0 +1,177 @@
+{
+  "generatedAt": "2026-11-04T21:37:50.129Z",
+  "sourceCommit": "59cbc3a9dd81129ffb208a6f77c5bc5f74790d94",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "scope": "Local server actions in Workers/D1; disposable fictional fixtures; no hosted requests",
+  "limits": [
+    "No browser screenshot or recording",
+    "No timed team rehearsal or second-person reproduction",
+    "No instructor approval",
+    "No full offline-browser test",
+    "No defended-lab implementation or retest",
+    "Restart proof is not a lab-only reset procedure"
+  ],
+  "results": [
+    {
+      "name": "secure valid login",
+      "expected": "success",
+      "actual": {
+        "status": "success",
+        "message": "Access granted. Welcome, student."
+      },
+      "passed": true
+    },
+    {
+      "name": "wrong password",
+      "expected": "error without query or records",
+      "actual": {
+        "status": "error",
+        "message": "The username or password is incorrect."
+      },
+      "passed": true
+    },
+    {
+      "name": "unknown account",
+      "expected": "error without query or records",
+      "actual": {
+        "status": "error",
+        "message": "The username or password is incorrect."
+      },
+      "passed": true
+    },
+    {
+      "name": "secure injection control",
+      "expected": "error without query or records",
+      "actual": {
+        "status": "error",
+        "message": "The username or password is incorrect."
+      },
+      "passed": true
+    },
+    {
+      "name": "empty input",
+      "expected": "error without query or records",
+      "actual": {
+        "status": "error",
+        "message": "Enter both a username and password."
+      },
+      "passed": true
+    },
+    {
+      "name": "oversized input",
+      "expected": "error without query or records",
+      "actual": {
+        "status": "error",
+        "message": "Enter one valid username and password within the supported lengths."
+      },
+      "passed": true
+    },
+    {
+      "name": "baseline wrong password",
+      "expected": "error, zero records",
+      "actual": {
+        "status": "error",
+        "message": "Login failed.",
+        "records": [],
+        "query": "SELECT display_name, role, private_note FROM lab_accounts WHERE username = 'alex' AND password = 'wrong'"
+      },
+      "passed": true
+    },
+    {
+      "name": "intentional local baseline bypass",
+      "expected": "success, three fictional records",
+      "actual": {
+        "status": "success",
+        "message": "Login bypassed. 3 fictional records exposed.",
+        "records": [
+          {
+            "name": "Alex Morgan",
+            "role": "Finance Intern",
+            "note": "Training record: invoice review due Friday."
+          },
+          {
+            "name": "Jamie Lee",
+            "role": "Help Desk",
+            "note": "Training record: temporary badge 1042."
+          },
+          {
+            "name": "Casey Rivera",
+            "role": "Operations",
+            "note": "Training record: vendor meeting moved to 3 PM."
+          }
+        ],
+        "query": "SELECT display_name, role, private_note FROM lab_accounts WHERE username = '' OR 1=1 --' AND password = 'test'"
+      },
+      "passed": true
+    },
+    {
+      "name": "lab cannot select secure users",
+      "expected": "error, zero records",
+      "actual": {
+        "status": "error",
+        "message": "The database rejected that input. Check the lab instructions and try again.",
+        "records": [],
+        "query": "SELECT display_name, role, private_note FROM lab_accounts WHERE username = '' UNION SELECT username,password_hash,password_salt FROM users --' AND password = 'test'"
+      },
+      "passed": true
+    },
+    {
+      "name": "secure DB has no lab table",
+      "expected": "no lab_accounts table",
+      "actual": null,
+      "passed": true
+    },
+    {
+      "name": "restart retains secure data and login",
+      "expected": "success and marker preserved",
+      "actual": {
+        "login": {
+          "status": "success",
+          "message": "Access granted. Welcome, student."
+        },
+        "marker": "fictional-preservation-marker"
+      },
+      "passed": true
+    },
+    {
+      "name": "restart retains lab seed",
+      "expected": "one legitimate fictional record",
+      "actual": {
+        "status": "success",
+        "message": "Login bypassed. 1 fictional record exposed.",
+        "records": [
+          {
+            "name": "Alex Morgan",
+            "role": "Finance Intern",
+            "note": "Training record: invoice review due Friday."
+          }
+        ],
+        "query": "SELECT display_name, role, private_note FROM lab_accounts WHERE username = 'alex' AND password = 'falcon7'"
+      },
+      "passed": true
+    },
+    {
+      "name": "production-style binding disables lab",
+      "expected": "error without query or records",
+      "actual": {
+        "status": "error",
+        "message": "The isolated Attack Lab database is unavailable.",
+        "records": []
+      },
+      "passed": true
+    },
+    {
+      "name": "production-style binding preserves secure login",
+      "expected": "success",
+      "actual": {
+        "status": "success",
+        "message": "Access granted. Welcome, student."
+      },
+      "passed": true
+    }
+  ]
+}
