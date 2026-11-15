@@ -58,7 +58,11 @@ export async function vulnerableLogin(
   const labDb = isolatedLabDb();
   if (!labDb) return { status: 'error', message: unavailableMessage, records: [] };
 
-  await prepareLab(labDb);
+  try {
+    await prepareLab(labDb);
+  } catch {
+    return { status: 'error', message: 'The lab could not initialize. Try again.', records: [] };
+  }
 
   // Intentionally vulnerable for this isolated classroom exercise.
   // The Defend phase replaces this string-built query with bound parameters.

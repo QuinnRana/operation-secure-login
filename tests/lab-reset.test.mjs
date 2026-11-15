@@ -3,14 +3,14 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
 
-// The fault is test-only: append a failing statement to the real D1 batch.
-// This exercises database rollback, not a mock transaction implementation.
+// Faults are test-only. Failing batches execute against real D1 so rollback
+// is verified in Workers, not a mock transaction implementation.
 const bundle = await build({
   stdin: { contents: `
     import { resetLab, vulnerableLogin } from './app/attack-lab/actions';
     export default { async fetch(request) {
       const path = new URL(request.url).pathname;
-      globalThis.failResetBatch = path === '/fault';
+      globalThis.labFault = path;
       if (path === '/reset' || path === '/fault') return Response.json(await resetLab());
       return Response.json(await vulnerableLogin({}, await request.formData()));
     }};
@@ -25,9 +25,16 @@ const bundle = await build({
         const value = target[key];
         if (key !== 'LAB_DB' || !value) return value;
         return new Proxy(value, { get(db, method) {
-          if (method === 'batch') return statements => db.batch(globalThis.failResetBatch
+          if (method === 'batch') return statements => db.batch(['/fault', '/failed-login-batch'].includes(globalThis.labFault)
             ? [...statements, db.prepare('INSERT INTO missing_test_table VALUES (1)')]
             : statements);
+          if (method === 'prepare') return sql => {
+            if ((globalThis.labFault === '/failed-login-create' && sql.includes('CREATE TABLE')) ||
+                (globalThis.labFault === '/failed-login-seed' && sql.includes('INSERT INTO'))) {
+              throw new Error('private-database-detail fictional-secret-value');
+            }
+            return db.prepare(sql);
+          };
           const member = db[method];
           return typeof member === 'function' ? member.bind(db) : member;
         }});
@@ -52,6 +59,38 @@ async function fixture(t, lab = true) {
   };
   return { runtime, secure, call };
 }
+
+await test('login initialization failures return a friendly error and permit retry', async t => {
+  for (const stage of ['create', 'seed', 'batch']) {
+    await t.test(stage, async t => {
+      const { runtime, secure, call } = await fixture(t);
+      const lab = await runtime.getD1Database('LAB_DB');
+      const expected = {
+        status: 'error', message: 'The lab could not initialize. Try again.', records: [],
+      };
+      // A cold failure must resolve normally without leaking details or a query
+      // that was never executed. D1 also rolls back the failed initialization.
+      assert.deepEqual(await call(`/failed-login-${stage}`), expected);
+      assert.equal(await lab.prepare("SELECT name FROM sqlite_master WHERE name='lab_accounts'").first(), null);
+      assert.equal((await call('/lab')).records.length, 1);
+      const before = (await lab.prepare('SELECT * FROM lab_accounts ORDER BY id').all()).results;
+      assert.equal(before.length, 3);
+      // The same failure on an initialized lab must preserve its baseline.
+      assert.deepEqual(await call(`/failed-login-${stage}`), expected);
+      assert.deepEqual((await lab.prepare('SELECT * FROM lab_accounts ORDER BY id').all()).results, before);
+      assert.equal((await call('/lab', "' OR 1=1 --", 'test')).records.length, 3);
+      const rejected = await call('/lab', "'", 'test');
+      assert.deepEqual(rejected, {
+        status: 'error',
+        message: 'The database rejected that input. Check the lab instructions and try again.',
+        records: [],
+        query: "SELECT display_name, role, private_note FROM lab_accounts WHERE username = ''' AND password = 'test'",
+      });
+      assert.equal((await secure.prepare('SELECT marker FROM users').first()).marker, 'fictional-secure-sentinel');
+      assert.equal(await secure.prepare("SELECT name FROM sqlite_master WHERE name='lab_accounts'").first(), null);
+    });
+  }
+});
 
 await test('ten concurrent resets and overlapping first logins leave exactly three seeds', async t => {
   const { runtime, secure, call } = await fixture(t);
