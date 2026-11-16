@@ -682,19 +682,28 @@ const MockSource = (() => {
 /* ---------- live sources: GitHub and GitLab ---------- */
 const PROVIDER_NAME = {github:"GitHub", gitlab:"GitLab"};
 function apiBase(c){
-  if(c.provider==="github") return c.host==="https://github.com" ? "https://api.github.com" : c.host+"/api/v3";
-  return c.host+"/api/v4";
+  let host; try{ host=new URL(c.host); }catch(e){ throw new Error("Use a valid HTTPS project host."); }
+  if(!["github","gitlab"].includes(c.provider)||host.protocol!=="https:"||host.username||host.password||host.pathname!=="/"||host.search||host.hash)
+    throw new Error("Use an HTTPS project host without embedded credentials.");
+  if(c.provider==="github") return host.origin==="https://github.com" ? "https://api.github.com" : host.origin+"/api/v3";
+  return host.origin+"/api/v4";
+}
+function canReuseToken(from,to){
+  try{ return !!from&&!!to&&from.provider===to.provider&&apiBase(from)===apiBase(to); }
+  catch(e){ return false; }
 }
 async function api(c,path,params){
-  const url=new URL(apiBase(c)+path);
+  const base=apiBase(c), url=new URL(base+path);
+  if(url.origin!==new URL(base).origin||url.username||url.password) throw new Error("The API request must stay on the selected provider host.");
   Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
   const tok=await getToken(c), P=PROVIDER_NAME[c.provider];
   const headers = c.provider==="github"
     ? Object.assign({Accept:"application/vnd.github+json"}, tok?{Authorization:`Bearer ${tok}`}:{})
     : (tok?{"PRIVATE-TOKEN":tok}:{});
   let r;
-  try{ r=await fetch(url,{headers}); }
-  catch(e){ throw new Error(`Couldn't reach ${url.host}. Check the project link and your internet connection.`); }
+  // Never forward a provider token through a redirect, even to another HTTPS host.
+  try{ r=await fetch(url,{headers,redirect:"error",credentials:"omit"}); }
+  catch(e){ throw new Error(`Couldn't reach ${url.host}. Check your connection and use the project's current HTTPS link; API redirects are blocked.`); }
   if(r.ok) return r.json();
   if(!tok&&expiredNow.has(connKey(c))&&[401,403,404].includes(r.status)) throw new Error(`The token saved on this computer for this project has expired. Paste it again below, or create a new one if you didn't keep a copy.`);
   if(r.status===401) throw new Error(`${P} rejected the token. It may be mistyped, expired or deleted. Make a new one using the steps below.`);
@@ -1837,12 +1846,13 @@ function parseProjectUrl(s,fallback){
   const ssh=s.match(/^git@([^:]+):(.+)$/); if(ssh) s=`https://${ssh[1]}/${ssh[2]}`;
   if(!/^https?:\/\//i.test(s)) s = /^[\w.-]+(\/[\w.-]+)+$/.test(s) && !/^[\w-]+\.[\w.-]+\//.test(s) ? `https://${fallback==="gitlab"?"gitlab.com":"github.com"}/${s}` : "https://"+s;
   let u; try{ u=new URL(s); }catch(e){ return null; }
+  if(u.protocol!=="https:"||u.username||u.password) return null;
   const h=u.hostname.toLowerCase();
   const provider = h==="github.com"||h.startsWith("github.") ? "github" : h.includes("gitlab") ? "gitlab" : fallback;
   let path=u.pathname.replace(/^\/+|\/+$/g,"").split("/-/")[0];     // drop GitLab sub-pages like /-/issues
   if(provider==="github") path=path.split("/").slice(0,2).join("/"); // drop GitHub sub-pages like /issues
   if(path.split("/").length<2) return null;
-  return {provider, host:`${u.protocol}//${u.host}`, project:decodeURIComponent(path)};
+  try{ return {provider, host:u.origin, project:decodeURIComponent(path)}; }catch(e){ return null; }
 }
 function tokenHelp(provider,host){
   if(provider==="gitlab"){
@@ -1887,6 +1897,7 @@ function connFormChanged(){
   $("cTokOpt").textContent = provider==="github" ? "(needed for private repos, recommended for all)" : "(needed for private projects)";
   if(!(connEditing&&tokenInfo(connEditing))) $("cToken").placeholder = provider==="github" ? "github_pat_…" : "glpat-…";
   if(helpFor!==provider+host){ helpFor=provider+host; $("cHelp").innerHTML=tokenHelp(provider,host); }
+  renderTokState(connEditing,false);
 }
 function showConnErr(msg){ $("cErr").hidden=!msg; $("cErr").textContent=msg||""; if(msg) $("cHelp").querySelector("details").open=/token/i.test(msg); }
 const fmtWhen = ms => new Date(ms).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
@@ -1898,11 +1909,15 @@ function renderSaved(){
       <button class="btn sm" data-edit="${esc(connKey(c))}">Edit</button><button class="btn sm" data-forget="${esc(connKey(c))}">Remove</button></div>`).join("")
     + (anyToken ? `<div style="margin-top:8px"><button class="btn sm" id="cForgetAll" title="Use this before leaving a shared computer">Forget all tokens on this computer</button></div>` : "") : "";
 }
-function renderTokState(c){
-  const t=c&&tokenInfo(c);
-  $("cTokState").innerHTML = t ? `A token is saved for this project (${tokenLabel(c)}). Leave the box empty to keep using it. <a href="#" id="cForgetTok">Forget it</a>` : "";
-  $("cToken").value="";
-  $("cToken").placeholder = t ? "•••••••• saved · paste a new token to replace it" : $("cProvider").value==="github" ? "github_pat_…" : "glpat-…";
+function renderTokState(c,clearInput=true){
+  const target=parseProjectUrl($("cUrl").value,$("cProvider").value);
+  if(target) target.provider=$("cProvider").value;
+  const different=c&&target&&!canReuseToken(c,target), t=c&&tokenInfo(c);
+  $("cTokState").innerHTML = different
+    ? "Different host or service: the original token will not be copied or removed. Supply a token for this destination, or leave blank to use its saved token or public access."
+    : t ? `A token is saved for this project (${tokenLabel(c)}). Leave the box empty to keep using it. <a href="#" id="cForgetTok">Forget it</a>` : "";
+  if(clearInput) $("cToken").value="";
+  $("cToken").placeholder = different ? "Token for this destination only" : t ? "•••••••• saved · paste a new token to replace it" : $("cProvider").value==="github" ? "github_pat_…" : "glpat-…";
 }
 function openConnect(c,err){
   connEditing=c||null;
@@ -1942,7 +1957,7 @@ $("cSaved").addEventListener("click",async e=>{
 $("cGo").onclick=async()=>{
   const sel=$("cProvider");
   const p=parseProjectUrl($("cUrl").value,sel.value);
-  if(!p) return showConnErr("Paste the full link to your project, for example https://github.com/owner/repo");
+  if(!p) return showConnErr("Paste an HTTPS project link without embedded credentials, for example https://github.com/owner/repo");
   if(sel.dataset.manual) p.provider=sel.value;
   const typed=$("cToken").value.trim(), ttl=$("cTtl").value==="tab"?"tab":+$("cTtl").value;
   const c=Object.assign(p,{name:$("cName").value.trim()||p.project.split("/").pop()});
@@ -1950,14 +1965,17 @@ $("cGo").onclick=async()=>{
   if(hasSaved&&!confirm(`Load the latest data for ${c.name}?\n\nThis replaces the copy saved in this browser, including any local edits.`)) return;
   if(dirty&&conns.active!==connKey(c)&&!confirm("You have unsaved changes. Switch projects and lose them?")) return;
   const btn=$("cGo"); btn.disabled=true; btn.textContent="Connecting…"; showConnErr("");
-  // store the token: a newly pasted one, or the existing one moved to a new link or a new "keep for" choice
-  const prev=connEditing, moved=prev&&connKey(prev)!==connKey(c);
-  const keep=!typed&&prev&&(moved||$("cTtl").dataset.changed) ? await getToken(prev) : "";
+  // A saved token can move between projects only on the same provider/API host.
+  // A different destination is a new connection; leave the original token intact.
+  const prev=connEditing, moved=prev&&connKey(prev)!==connKey(c), reuse=canReuseToken(prev,c);
+  const keep=!typed&&reuse&&(moved||$("cTtl").dataset.changed) ? await getToken(prev) : "";
   if(typed||keep) await saveToken(c,typed||keep,ttl);
-  if(moved&&(typed||keep)) forgetToken(prev);
   try{
     await openProject(c,true);
-    if(connEditing&&connKey(connEditing)!==connKey(c)){ conns.recent=conns.recent.filter(x=>x!==connEditing); saveConns(); renderRecent(); }
+    if(moved&&reuse){
+      if(typed||keep) forgetToken(prev);
+      conns.recent=conns.recent.filter(x=>x!==prev); saveConns(); renderRecent();
+    }
     if(hasSaved) try{ localStorage.removeItem(dataKeyFor(c)); }catch(e){}
     closeOverlays(); toast(`✓ Connected to ${esc(c.name)}`);
   }catch(err){
