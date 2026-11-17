@@ -1052,20 +1052,41 @@ function render(){
   renderLegend();
   ({overview:renderOverview, activity:renderActivity, board:renderBoard, analytics:renderAnalytics})[ui.view]();
 }
+// Imported snapshots are untrusted: render labels as text and never accept script URLs.
+function progressIssueUrl(projectUrl, issueId){
+  if(typeof projectUrl!=="string" || !Number.isSafeInteger(issueId) || issueId<1) return null;
+  try{
+    const url=new URL(projectUrl);
+    if(url.protocol!=="https:" || url.username || url.password) return null;
+    url.search=""; url.hash="";
+    url.pathname=url.pathname.replace(/\/$/, "")+"/issues/"+issueId;
+    return url.href;
+  }catch{ return null; }
+}
 function renderProjectProgress(){
   const el=document.getElementById("projectProgress");
+  el.replaceChildren();
   if(!S.project){ el.textContent="Demo project — sample data, not your team’s progress."; return; }
+  const add=(tag,text,parent=el)=>{ const node=document.createElement(tag); node.textContent=text; parent.append(node); return node; };
   const isTeam=activeConn()?.project==="QuinnRana/operation-secure-login";
   const tasks=S.issues.filter(i=>!isTeam || i.id!==15);
   const done=tasks.filter(i=>i.status==="done").length;
   const pct=tasks.length?Math.round(done/tasks.length*100):null;
   const remaining=tasks.filter(i=>i.status!=="done");
-  el.innerHTML=`<h2>Project completion: ${pct===null?"Not tracked yet":pct+"%"}</h2>
-    <p>${done} of ${tasks.length} tasks marked complete · ${remaining.length} remaining</p>
-    ${pct===null?"":`<progress value="${done}" max="${tasks.length}" style="width:100%" aria-label="Project tasks completed"></progress>`}
-    <p>Based on issue status, with each task counted equally${isTeam?"; the START HERE roadmap (#15) is excluded":""}. This is not a grade or an automatic code audit. Local edits affect this view; update issues on GitHub and reload for shared team progress.</p>
-    <h3>What still needs work</h3>
-    ${remaining.length?`<ul>${remaining.map(i=>`<li><a href="${esc(S.project.url)}/issues/${i.id}" target="_blank" rel="noopener">#${i.id} · ${esc(i.title)}</a> — ${esc(i.assignee||"Unassigned")}</li>`).join("")}</ul>`:tasks.length?"<p>All tracked tasks are marked complete. Verify the rubric and supporting evidence before submitting.</p>":"<p>Create GitHub issues for the required work to begin tracking progress.</p>"}`;
+  add("h2",`Project completion: ${pct===null?"Not tracked yet":pct+"%"}`);
+  add("p",`${done} of ${tasks.length} tasks marked complete · ${remaining.length} remaining`);
+  if(pct!==null){ const bar=add("progress",""); bar.value=done; bar.max=tasks.length; bar.style.width="100%"; bar.setAttribute("aria-label","Project tasks completed"); }
+  add("p",`Based on issue status, with each task counted equally${isTeam?"; the START HERE roadmap (#15) is excluded":""}. This is not a grade or an automatic code audit. Local edits affect this view; update issues on GitHub and reload for shared team progress.`);
+  add("h3","What still needs work");
+  if(remaining.length){
+    const list=add("ul","");
+    for(const issue of remaining){
+      const row=add("li","",list), href=progressIssueUrl(S.project.url,issue.id);
+      const label=add(href?"a":"span",`#${issue.id} · ${issue.title}`,row);
+      if(href){ label.href=href; label.target="_blank"; label.rel="noopener noreferrer"; }
+      add("span",` — ${issue.assignee||"Unassigned"}`,row);
+    }
+  }else add("p",tasks.length?"All tracked tasks are marked complete. Verify the rubric and supporting evidence before submitting.":"Create GitHub issues for the required work to begin tracking progress.");
 }
 function renderBrand(){
   const p=S.project;
