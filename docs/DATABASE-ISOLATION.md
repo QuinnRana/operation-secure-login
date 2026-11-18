@@ -43,7 +43,7 @@ Stopping and restarting `pnpm dev` keeps both local database files. After a rest
 
 - **Permitted target:** only the Attack Lab on a teammate's own local development server (`pnpm dev --host 127.0.0.1`, reached at `localhost`). Do not aim the payload at the hosted site, another teammate's machine, or any other system.
 - **Permitted data:** only the fictional seed records above. Do not add real names, real credentials, or reused passwords to either database.
-- **Team confirmation:** TODO. The team still needs to confirm this target and data scope against the professor's rubric (issue #2), and record who confirmed it and when.
+- **Team confirmation:** Quinn confirmed completion of this target/data requirement in the project chat on November 18, 2026: each teammate’s own localhost lab, fictional records only, no real personal data or reused personal passwords. Issue #5 is complete; #2 was removed as unnecessary.
 
 ## Build and hosting
 

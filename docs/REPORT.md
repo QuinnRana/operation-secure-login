@@ -106,7 +106,7 @@ GitHub Actions ("Security and build checks") runs the same checks on every push 
 
 The tests use disposable fictional data and never touch a hosted database. The session tests were checked with **negative controls**: a defense was deliberately broken (for example by storing the raw session token, or by ignoring expiry) to confirm that a test then fails. See the "Tests" sections in [SESSIONS.md](SESSIONS.md) and [DEFENDED-LAB.md](DEFENDED-LAB.md).
 
-**Browser runs** are in the [evidence index](#evidence-index). The secure login, baseline and before/after runs were each **one person's run** (Matthew, with Claude Code driving the browser); the clickjacking record does not name its runner. David separately reported a pass of the Windows security-header check on all three pages on 2026-11-14 ([LOCAL-SETUP.md](LOCAL-SETUP.md#windows-security-header-smoke-test), PR #38). A second teammate repeating the other runs is still pending (#1, #7, #11).
+**Browser runs** are in the [evidence index](#evidence-index). The secure login, baseline and before/after runs were each **one person's run** (Matthew, with Claude Code driving the browser); the clickjacking record does not name its runner. David separately reported a pass of the Windows security-header check on all three pages on 2026-11-14 ([LOCAL-SETUP.md](LOCAL-SETUP.md#windows-security-header-smoke-test), PR #38). Quinn subsequently confirmed #1 and #7 complete in the project chat on November 18. #11 now has all checklist items complete, including the required `checks` job on main. These confirmations are separate from the historical recorded runs.
 
 ## Residual risk
 
@@ -130,7 +130,7 @@ What the build still does not stop, and why that was accepted or what partly cov
 | Logs go to the server console only; retention and alerting are not set up | The hosting platform controls log storage | Accepted for a lab. The logs contain no credentials, so keeping them carries little risk. |
 | Hosted-site behavior (headers, the absence of `LAB_DB`, isolation) is not verified here | Testing used local servers only | This comes from repository configuration ([isolation: build and hosting](DATABASE-ISOLATION.md#build-and-hosting)). |
 | The environment is a local web app, not VMs or virtual networks | The project is a single web application | **Open question for the team and instructor:** the rubric's implementation criterion mentions VMs or virtual networks. |
-| The permitted lab target and data scope are not yet confirmed by the team | Recorded as a TODO in [DATABASE-ISOLATION.md](DATABASE-ISOLATION.md#permitted-target-and-data) | The documented scope is a local dev server and fictional data only. Confirmation belongs to #2. |
+| Hosted testing scope is not approved by this report | The agreed classroom target is each teammate’s own localhost lab with fictional records only | Quinn confirmed the target/data requirement for #5 on November 18; no hosted attack is authorized. |
 
 ## Evidence index
 
@@ -147,3 +147,7 @@ All evidence files are stored in this repository at the paths below.
 | [SESSIONS.md](SESSIONS.md), [DEFENDED-LAB.md](DEFENDED-LAB.md), [LOGIN-RATE-LIMIT.md](LOGIN-RATE-LIMIT.md), [DATABASE-ISOLATION.md](DATABASE-ISOLATION.md) | #5, #8, #9, #10 | Design, tests and limits for each control |
 
 Where each rubric criterion is covered: [RUBRIC-EVIDENCE.md](RUBRIC-EVIDENCE.md).
+
+## Release preparation update — November 18, 2026
+
+This release preparation combines the report work with main’s PR #41 initialization-error fix. Quinn confirmed #1, #5, #7 and #13 complete. #2 was removed as unnecessary. The main branch now requires GitHub Actions `checks` and an up-to-date branch before merging, in addition to its existing pull-request review rule. The original dated test results above remain historical; see the release pull request for fresh combined-source validation.

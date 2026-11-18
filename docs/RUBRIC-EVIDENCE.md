@@ -57,3 +57,15 @@ Not tracked here; this map covers only what the repository and board can show.
 ## Individual grades
 
 Each member's grade is the team score × the number of members × that member's share of the story points (capped per component). The README table and the board are what the instructor checks, so **the board's assignments must be correct before grading**.
+
+## Current completion update — November 18, 2026
+
+The tables above preserve the reviewed `caba9c6` snapshot. The following later changes supersede its task-status and board-count notes:
+
+- #2 was closed as not planned and removed: 14 board items, 53 estimated points remain.
+- #1, #5, #7 and #13 were confirmed complete by Quinn in the project chat.
+- #11 is complete: GitHub Actions `checks` is required on main, with up-to-date branches required. Existing pull-request/one-approval protection remains.
+- Done points total 45: Matthew has 29 assigned points (#1, #5, #7, #8, #9, #11); 16 points (#3, #4, #6, #10, #13) remain unassigned. This does not infer individual authorship.
+- The final release preparation combines main’s #41 fix and development’s report work.
+- #14 still requires the actual submission destination, required files/links, final release verification and professor access confirmation.
+- Team confirmation closes the named task criteria; wiki publication, contribution attribution and instructor-specific presentation/environment requirements should still be checked against the actual submission instructions.
