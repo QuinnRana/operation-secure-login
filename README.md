@@ -68,3 +68,22 @@ The secure login and defended lab each allow five attempts per account per 60-se
 ## Authentication failure work
 
 Normal secure login derives a candidate password hash for both known and unknown usernames after rate-limit admission, then returns the same generic invalid-credential response. This removes the large difference from skipping credential hashing for unknown accounts; it does not promise constant response time or prevent all account enumeration. Input rejection and throttled requests still avoid password work. The disposable regression test checks actual hash-call counts rather than flaky wall-clock thresholds. The intentionally vulnerable Attack Lab is unchanged.
+
+## Individual Contribution Summary Table
+
+Story points come from the [project board](https://github.com/users/QuinnRana/projects/1)'s Estimate field and count only items marked **Done** with the member as assignee. Commits and merged pull requests are listed as the evidence behind the board. Last updated 2026-11-18; **the team must review and correct this table before submission.**
+
+| Member | GitHub | Story points Done | Done issues | In review (points) | Authored commits on `codex/development` | Merged PRs |
+|---|---|---|---|---|---|---|
+| Matthew | [@matthewgill3035-rgb](https://github.com/matthewgill3035-rgb) | 13 | #8, #9 | 16 (#1, #5, #7, #11) | 13 | 12 |
+| Quinn | [@QuinnRana](https://github.com/QuinnRana) | 0 | — | 0 | 16 | 10 |
+| David | [@DavidE2525](https://github.com/DavidE2525) | 0 | — | 0 | 3 | 2 |
+| *Unassigned* | — | 8 | #3, #4, #6 | — | — | — |
+| **Total** | | **21** | | **16** | **32** | **24** |
+
+**To fix before submission:**
+- #3, #4 and #6 (8 points) are Done but unassigned, so they count toward no one. Assign them to whoever did the work.
+- Quinn's merged work (for example PRs #20, #21, #23, #24, #28–#30, #40) and David's (#17, #38) is not yet linked to assigned board items. The team should decide which issues match that work (for example #10, rate limiting, whose code is merged) and who they are assigned to.
+- Recount the points after the remaining in-review items reach Done.
+
+Matthew's commits appear under the Git author name `mcgill24`. Authored commits come from `git log --no-merges --format='%an' origin/codex/development` and leave out merge commits; Quinn also made 29 merge commits: 14 merge other members' pull requests (12 of Matthew's, 2 of David's), 9 merge Quinn's own, and 6 are branch-integration merges. Merged PRs come from `gh pr list --state merged --author <member>` and include PRs into any branch, so a stacked PR (for example #32, #34) is counted alongside the PR it fed into.
