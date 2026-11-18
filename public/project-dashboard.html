@@ -1006,6 +1006,11 @@ let lastStatus = "Mock data";
    HELPERS
    ===================================================================== */
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Keep imported member names and roles as text in every assignee selector.
+function assigneeOption(name, selected=false, withRole=false){
+  const label=withRole?`${name} — ${MEMBERS[name]?.role??""}`:name;
+  return `<option value="${esc(name)}"${selected?" selected":""}>${esc(label)}</option>`;
+}
 const pd = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
 const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const addD = (s,n) => { const d=pd(s); d.setDate(d.getDate()+n); return iso(d); };
@@ -1306,7 +1311,7 @@ function startEdit(cell){
   const orig = cell.innerHTML;
   cell.classList.add("editing");
   let ctl;
-  if(field==="assignee") ctl=`<select>${ASSIGNEES.map(a=>`<option ${a===val?"selected":""}>${a}</option>`).join("")}</select>`;
+  if(field==="assignee") ctl=`<select>${ASSIGNEES.map(a=>assigneeOption(a,a===val)).join("")}</select>`;
   else if(field==="sp") ctl=`<select>${SP_SCALE.map(n=>`<option ${n===val?"selected":""}>${n}</option>`).join("")}</select>`;
   else if(field==="start"||field==="end"||field==="due") ctl=`<input type="date" value="${val||""}">`;
   else ctl=`<input type="text" value="${esc(val)}">`;
@@ -1401,7 +1406,7 @@ function openIssue(id,defaults){
   if(!i) return;
   $("mTitle").innerHTML = id===null ? "New issue" : `${issueIcon(i)} Issue #${i.id}`;
   $("fTitle").value=i.title; $("fDesc").value=i.description||"";
-  $("fAssignee").innerHTML=ASSIGNEES.map(a=>`<option value="${a}">${a} — ${MEMBERS[a].role}</option>`).join(""); $("fAssignee").value=i.assignee;
+  $("fAssignee").innerHTML=ASSIGNEES.map(a=>assigneeOption(a,false,true)).join(""); $("fAssignee").value=i.assignee;
   $("fStatus").innerHTML=STATUSES.map(([k,l])=>`<option value="${k}">${l}</option>`).join(""); $("fStatus").value=i.status;
   $("fSp").innerHTML=SP_SCALE.map(n=>`<option>${n}</option>`).join(""); $("fSp").value=i.sp;
   $("fMs").innerHTML=S.milestones.map(m=>`<option value="${m.id}">${esc(m.title)}</option>`).join(""); $("fMs").value=i.ms;
@@ -1605,7 +1610,7 @@ function renderBoard(){
   const list=S.issues.filter(i=>(ui.boardMs==="all"||i.ms===+ui.boardMs||(ui.boardMs==="sprint"&&cur&&i.start<=cur.end&&i.end>=cur.start))&&(ui.boardWho==="all"||i.assignee===ui.boardWho));
   let h=`<div class="toolbar">
      <select class="sel" id="bMs"><option value="all">All milestones</option><option value="sprint" ${ui.boardMs==="sprint"?"selected":""}>Current sprint${cur?` (Sprint ${cur.n})`:""}</option>${S.milestones.map(m=>`<option value="${m.id}" ${String(ui.boardMs)===String(m.id)?"selected":""}>${esc(m.title)}</option>`).join("")}</select>
-     <select class="sel" id="bWho"><option value="all">Everyone</option>${ASSIGNEES.map(a=>`<option ${ui.boardWho===a?"selected":""}>${a}</option>`).join("")}</select>
+     <select class="sel" id="bWho"><option value="all">Everyone</option>${ASSIGNEES.map(a=>assigneeOption(a,ui.boardWho===a)).join("")}</select>
      <span class="hint">${list.length} issues · ${list.reduce((a,i)=>a+i.sp,0)} SP · drag cards between columns to change status</span></div>
    <div class="pane"><div class="board">`;
   for(const [key,label,color] of STATUSES){
