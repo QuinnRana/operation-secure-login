@@ -25,7 +25,7 @@ The checked-in `.openai/hosting.json` supplies the `DB` binding name. Local deve
 
 ## Startup checks
 
-1. On `/`, sign in with `student` and `Training123!`. Expect `Access granted. Welcome, student.`
+1. On `/`, sign in with `student` and `Training123!`. Expect to be taken to `/account`, which shows "Signed in as student" (see [login sessions](SESSIONS.md)).
 2. Try an incorrect password. Expect the generic incorrect-credentials message.
 3. On `/attack-lab`, use its supplied classroom payload with a dummy password. Expect three fictional records.
 4. Restart the server and repeat the valid login to confirm the local database remains usable.
