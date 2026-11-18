@@ -25,12 +25,27 @@ The checked-in `.openai/hosting.json` supplies the `DB` binding name. Local deve
 
 ## Startup checks
 
-1. On `/`, sign in with `student` and `Training123!`. Expect `Access granted. Welcome, student.`
+1. On `/`, sign in with `student` and `Training123!`. Expect to be taken to `/account`, which shows "Signed in as student" (see [login sessions](SESSIONS.md)).
 2. Try an incorrect password. Expect the generic incorrect-credentials message.
 3. On `/attack-lab`, use its supplied classroom payload with a dummy password. Expect three fictional records.
 4. Restart the server and repeat the valid login to confirm the local database remains usable.
 
 Record the computer/OS, branch and commit, Node/pnpm versions, local URL, and results. Never include personal credentials or real database records in evidence.
+
+## Windows security-header smoke test
+
+After starting the development server, open a second PowerShell window in the repository and run the command below. Use the local origin printed by the server if the port differs.
+
+```powershell
+git rev-parse HEAD
+node --version
+pnpm --version
+powershell.exe -NoProfile -File .\scripts\check-security-headers.ps1 -BaseUrl http://127.0.0.1:3000
+```
+
+Expect `PASS` for `/`, `/attack-lab`, and `/defended-lab`. Each route must return HTTP 200 with `Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY`. The script exits with code 1 if any route or header check fails.
+
+On November 14, 2026, David Emetu [reported a pass on all three routes](https://github.com/QuinnRana/operation-secure-login/pull/38#issuecomment-6871584649) at `http://localhost:3000/` while verifying PR #38. The report records the URL and route outcomes. For subsequent runs, capture the Windows version, commit, Node and pnpm versions, and the script output.
 
 ## Troubleshooting
 
