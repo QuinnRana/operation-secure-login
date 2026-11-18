@@ -102,11 +102,11 @@ Story points come from the [project board](https://github.com/users/QuinnRana/pr
 
 | Member | GitHub | Story points Done | Done issues | In review (points) | Authored commits on `codex/development` | Merged PRs |
 |---|---|---|---|---|---|---|
-| Matthew | [@matthewgill3035-rgb](https://github.com/matthewgill3035-rgb) | 29 | #1, #5, #7, #8, #9, #11 | 0 | 14 | 13 |
+| Matthew | [@matthewgill3035-rgb](https://github.com/matthewgill3035-rgb) | 34 | #1, #5, #7, #8, #9, #11, #12 | 0 | 14 | 13 |
 | Quinn | [@QuinnRana](https://github.com/QuinnRana) | 0 | — | 0 | 16 | 11 |
 | David | [@DavidE2525](https://github.com/DavidE2525) | 0 | — | 0 | 4 | 3 |
 | *Unassigned* | — | 16 | #3, #4, #6, #10, #13 | — | — | — |
-| **Total** | | **45** | | **0** | **34** | **27** |
+| **Total** | | **50** | | **0** | **34** | **27** |
 
 **To fix before submission:**
 - #3, #4 and #6 (8 points) are Done but unassigned, so they count toward no one. Assign them to whoever did the work.
@@ -117,4 +117,6 @@ Matthew's commits appear under the Git author name `mcgill24`. Authored commits 
 
 ## Completion update — November 18, 2026
 
-Quinn confirmed #1, #5, #7 and #13 complete in the project chat. #2 was closed as not planned and removed from the board. #11 is complete: the GitHub Actions `checks` job is now required on `main`, with up-to-date branches required; the existing pull-request and one-approval requirements remain. Done points are 45: 29 assigned to Matthew and 16 currently unassigned. These are board assignments, not a reassignment of authorship. Historical commit and PR counts above describe the earlier `caba9c6` snapshot. Final submission and professor access remain tracked in #14.
+Quinn confirmed #1, #5, #7 and #13 complete in the project chat. #2 was closed as not planned and removed from the board. #11 is complete: the GitHub Actions `checks` job is now required on `main`, with up-to-date branches required; the existing pull-request and one-approval requirements remain. Done points are 50: 34 assigned to Matthew and 16 currently unassigned. These are board assignments, not a reassignment of authorship. Historical commit and PR counts above describe the earlier `caba9c6` snapshot. Final submission and professor access remain tracked in #14.
+
+Documentation review #12 is complete after fresh combined-source checks. Final release review and actual submission remain in #14.
