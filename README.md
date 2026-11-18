@@ -31,9 +31,36 @@ Attack Lab:
 2. **Attack:** use the supplied SQL-injection payload in the isolated lab and document the authentication bypass.
 3. **Defend:** replace string-built SQL with bound parameters, hash passwords, add rate limiting and logging, then repeat the same test to verify it fails.
 
+## Project reports
+
+- [Build–Attack–Defend report](docs/REPORT.md): the attack, each defense with before/after evidence, plain-language explanations, test results and residual risk
+- [Architecture and data flow](docs/ARCHITECTURE.md): diagram and trust boundaries
+- [Rubric-to-evidence map](docs/RUBRIC-EVIDENCE.md): where each grading criterion is covered and what is still missing
+
 ## Run locally
 
-Install dependencies and start the development site with the package scripts in `package.json`. The local development environment creates and retains the D1-compatible database automatically.
+**Prerequisites:** Git, Node.js 22.13 or later (Node 24 recommended), and pnpm 11.25.0 (`npm install --global pnpm@11.25.0`).
+
+```sh
+git clone --branch codex/development https://github.com/QuinnRana/operation-secure-login.git
+cd operation-secure-login
+pnpm install --frozen-lockfile
+pnpm dev --host 127.0.0.1
+```
+
+Open the URL the server prints (for example `http://localhost:3000/`). Stop the server with Ctrl+C.
+
+- **Databases:** local development creates both D1-compatible databases (`DB` and `LAB_DB`) under `.wrangler/`. Their tables and fictional records are created the first time each login runs.
+- **Reset the lab:** use the **Reset lab data** button on `/attack-lab` and **Reset defended lab** on `/defended-lab`. Do not delete `.wrangler/`, because that also erases the secure login's data.
+- **Checks:** `pnpm test`, `pnpm lint`, `pnpm typecheck` and `pnpm build`.
+
+Full steps, startup checks and troubleshooting are in [local setup](docs/LOCAL-SETUP.md).
+
+**Team workflow:**
+1. Branch from `codex/development`.
+2. Open a pull request back into it. CI runs the checks on every pull request, and a teammate should review it before it is merged.
+3. The final merge to `main` is the last step (#14).
+4. Track every task on the [project board](https://github.com/users/QuinnRana/projects/1).
 
 ## Safety boundary
 
@@ -71,19 +98,19 @@ Normal secure login derives a candidate password hash for both known and unknown
 
 ## Individual Contribution Summary Table
 
-Story points come from the [project board](https://github.com/users/QuinnRana/projects/1)'s Estimate field and count only items marked **Done** with the member as assignee. Commits and merged pull requests are listed as the evidence behind the board. Last updated 2026-11-18; **the team must review and correct this table before submission.**
+Story points come from the [project board](https://github.com/users/QuinnRana/projects/1)'s Estimate field and count only items marked **Done** with the member as assignee. Commits and merged pull requests are listed as the evidence behind the board. Last updated 2026-11-18 (`codex/development` `caba9c6`); **the team must review and correct this table before submission.**
 
 | Member | GitHub | Story points Done | Done issues | In review (points) | Authored commits on `codex/development` | Merged PRs |
 |---|---|---|---|---|---|---|
-| Matthew | [@matthewgill3035-rgb](https://github.com/matthewgill3035-rgb) | 13 | #8, #9 | 16 (#1, #5, #7, #11) | 13 | 12 |
-| Quinn | [@QuinnRana](https://github.com/QuinnRana) | 0 | — | 0 | 16 | 10 |
-| David | [@DavidE2525](https://github.com/DavidE2525) | 0 | — | 0 | 3 | 2 |
+| Matthew | [@matthewgill3035-rgb](https://github.com/matthewgill3035-rgb) | 13 | #8, #9 | 16 (#1, #5, #7, #11) | 14 | 13 |
+| Quinn | [@QuinnRana](https://github.com/QuinnRana) | 0 | — | 0 | 16 | 11 |
+| David | [@DavidE2525](https://github.com/DavidE2525) | 0 | — | 0 | 4 | 3 |
 | *Unassigned* | — | 8 | #3, #4, #6 | — | — | — |
-| **Total** | | **21** | | **16** | **32** | **24** |
+| **Total** | | **21** | | **16** | **34** | **27** |
 
 **To fix before submission:**
 - #3, #4 and #6 (8 points) are Done but unassigned, so they count toward no one. Assign them to whoever did the work.
-- Quinn's merged work (for example PRs #20, #21, #23, #24, #28–#30, #40) and David's (#17, #38) is not yet linked to assigned board items. The team should decide which issues match that work (for example #10, rate limiting, whose code is merged) and who they are assigned to.
+- Quinn's merged work (for example PRs #20, #21, #23, #24, #28–#30, #40, #41) and David's (#17, #38, #39) is not yet linked to assigned board items. The team should decide which issues match that work (for example #10, rate limiting, whose code is merged) and who they are assigned to.
 - Recount the points after the remaining in-review items reach Done.
 
-Matthew's commits appear under the Git author name `mcgill24`. Authored commits come from `git log --no-merges --format='%an' origin/codex/development` and leave out merge commits; Quinn also made 29 merge commits: 14 merge other members' pull requests (12 of Matthew's, 2 of David's), 9 merge Quinn's own, and 6 are branch-integration merges. Merged PRs come from `gh pr list --state merged --author <member>` and include PRs into any branch, so a stacked PR (for example #32, #34) is counted alongside the PR it fed into.
+Matthew's commits appear under the Git author name `mcgill24`. Authored commits come from `git log --no-merges --format='%an' origin/codex/development` and leave out merge commits; Quinn also made 31 merge commits: 16 merge other members' pull requests (13 of Matthew's, 3 of David's), 9 merge Quinn's own, and 6 are branch-integration merges. Merged PRs come from `gh pr list --state merged --author <member>` and include PRs into any branch, so a stacked PR (for example #32, #34) is counted alongside the PR it fed into.
